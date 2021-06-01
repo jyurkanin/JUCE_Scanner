@@ -1,0 +1,7 @@
+
+* The whole thing
+
+
+* Synchronize samples with scan updates
+  So that a scanner update occurs every x samples
+  
