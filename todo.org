@@ -1,0 +1,13 @@
+
+* The whole thing
+  Done creating an oscillator.
+  I'll work on adding knobs for the gui.
+  Also I want to try to create a plugin just as a test run so I can learn how.
+  Honestly not too excited by the thing in its current state.
+  It does look kinda cool though but sounds pretty boring.
+
+* Polynomial interpolation in the tick function?
+  Possibly lead to smooth sound. Currently sounds kinda harsh and idk why.
+  I think I tried this actually year ago in the original synth code and it wasn't very itneresting.
+
+  
