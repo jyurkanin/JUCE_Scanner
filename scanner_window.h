@@ -21,7 +21,7 @@ typedef struct{
 using namespace Eigen;
 
 
-class ScannerWindow   : public juce::AnimatedAppComponent{
+class ScannerWindow : public juce::AnimatedAppComponent{
 public:
   ScannerWindow(Scanner *s);
   void update() override;
@@ -35,7 +35,6 @@ public:
   
 private:
   Scanner *scanner;
-  Vector3f origin;
-    
+  
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ScannerWindow)
 };

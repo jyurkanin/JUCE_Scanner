@@ -6,6 +6,7 @@
   ==============================================================================
 */
 
+#include <fenv.h>
 #include <JuceHeader.h>
 #include "MainComponent.h"
 
@@ -21,8 +22,8 @@ public:
     void initialise (const juce::String& commandLine) override
     {
       
-
-        mainWindow.reset (new MainWindow (getApplicationName()));
+      //feenableexcept(FE_INVALID | FE_OVERFLOW);
+      mainWindow.reset (new MainWindow (getApplicationName()));
     }
 
     void shutdown() override

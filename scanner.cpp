@@ -15,30 +15,21 @@ Scanner::Scanner(){
   scan_idx = 0;
   scan_freq = 220;
   
-  //Circular configuration
-  int offset_x = 0;
-  int offset_y = 0;
-  float radius = 4;
   for(int i = 0; i < num_nodes; i++){
-    float theta = 2.0f*M_PI*i/(float)num_nodes;
-    node_pos[0][i] = radius*cosf(theta);
-    node_pos[1][i] = radius*sinf(theta);
-    node_pos[2][i] = 0;
-
-    node_eq_pos[0][i] = (radius+1)*cosf(theta);
-    node_eq_pos[1][i] = (radius+1)*sinf(theta);
-    node_eq_pos[2][i] = 0;
+    node_pos[0][i] = 2*i;
+    node_pos[1][i] = 0;
+    
+    node_eq_pos[0][i] = 2*i;
+    node_eq_pos[1][i] = 0;
   }
   
   for(int i = 0; i < num_nodes; i++){
     node_vel[0][i] = 0;
     node_vel[1][i] = 0;
-    node_vel[2][i] = 0;
 
     node_acc[0][i] = 0;
     node_acc[1][i] = 0;
-    node_acc[2][i] = 0;
-
+    
     node_damping[i] = 0;
     restoring_k[i] = 0;
     scan_table[i] = 0;
@@ -61,15 +52,17 @@ Scanner::Scanner(){
   fillWithWaveform(3, restoring_k, num_nodes);
 
   //fillWithWaveform(21, node_eq_pos[2], num_nodes);
-  fillWithWaveform(8, node_pos[2], num_nodes);
+  fillWithWaveform(0, node_pos[1], num_nodes);
   //fillWithWaveform(0, scan_table, num_nodes);
-
+  
   for(int i = 0; i < num_nodes; i++){
     node_damping[i] = std::max(node_damping[i], 0.0f);
     connection_k[i] = std::max(connection_k[i], 0.0f);
     restoring_k[i] = std::max(restoring_k[i], 0.0f);
   }
-  
+
+  lp_filter.setCutoff(4000.0f);
+  lp_filter.setQFactor(.1f);
 }
 
 Scanner::~Scanner(){
@@ -82,38 +75,67 @@ void Scanner::setSampleRate(float sr){
 
 void Scanner::strike(){
   for(int i = 0; i < num_nodes; i++){
-    node_pos[2][i] = hammer_table[i];
+    node_pos[1][i] = hammer_table[i];
   }
 }
 
 void Scanner::computeScanTable(){
+  const juce::ScopedLock sl(mutex_scan_table_);
+  //lock this function to 
+  //control access to scan_table resource
+  
   for(int i = 0; i < num_nodes; i++){
     //float x2 = node_pos[0][i]*node_pos[0][i];
     //float y2 = node_pos[1][i]*node_pos[1][i];
     
-    scan_table[i] = node_pos[2][i]; //sqrtf(x2 + y2) - 4.0f;
+    scan_table[i] = node_pos[1][i]; //sqrtf(x2 + y2) - 4.0f;
   }
 }
 
+
 void Scanner::timerCallback(){
-  static float k1_pos[3][num_nodes];
-  static float k1_vel[3][num_nodes];
-  static float k1_acc[3][num_nodes];
+  timerCallbackRK4();
+}
 
-  static float k2_pos[3][num_nodes];
-  static float k2_vel[3][num_nodes];
-  static float k2_acc[3][num_nodes];
+void Scanner::timerCallbackEuler(){
+  for(int ii = 0; ii < 10; ii++){
+  
+    ode(node_pos, node_vel, node_acc);
+  
+    for(unsigned j = 0; j < 2; j++){
+      for(unsigned i = 0; i < num_nodes; i++){
+        node_pos[j][i] = node_pos[j][i] + step_size*node_vel[j][i];
+        node_vel[j][i] = node_vel[j][i] + step_size*node_acc[j][i];
+      }
+    }
 
-  static float k3_pos[3][num_nodes];
-  static float k3_vel[3][num_nodes];
-  static float k3_acc[3][num_nodes];
 
-  static float k4_pos[3][num_nodes];
-  static float k4_vel[3][num_nodes];
-  static float k4_acc[3][num_nodes];
+  
+    computeScanTable();
+
+  }
+}
+
+
+void Scanner::timerCallbackRK4(){
+  float k1_pos[2][num_nodes];
+  float k1_vel[2][num_nodes];
+  float k1_acc[2][num_nodes];
+
+  float k2_pos[2][num_nodes];
+  float k2_vel[2][num_nodes];
+  float k2_acc[2][num_nodes];
+
+  float k3_pos[2][num_nodes];
+  float k3_vel[2][num_nodes];
+  float k3_acc[2][num_nodes];
+
+  float k4_pos[2][num_nodes];
+  float k4_vel[2][num_nodes];
+  float k4_acc[2][num_nodes];
   
   
-  for(unsigned j = 0; j < 3; j++){
+  for(unsigned j = 0; j < 2; j++){
     for(unsigned i = 0; i < num_nodes; i++){
       k1_pos[j][i] = node_pos[j][i];
       k1_vel[j][i] = node_vel[j][i];
@@ -121,7 +143,7 @@ void Scanner::timerCallback(){
   }
   ode(k1_pos,k1_vel,k1_acc);
 
-  for(unsigned j = 0; j < 3; j++){
+  for(unsigned j = 0; j < 2; j++){
     for(unsigned i = 0; i < num_nodes; i++){
       k2_pos[j][i] = node_pos[j][i] + step_size*k1_vel[j][i]/2.0f;
       k2_vel[j][i] = node_vel[j][i] + step_size*k1_acc[j][i]/2.0f;
@@ -129,7 +151,7 @@ void Scanner::timerCallback(){
   }
   ode(k2_pos,k2_vel,k2_acc);
 
-  for(unsigned j = 0; j < 3; j++){
+  for(unsigned j = 0; j < 2; j++){
     for(unsigned i = 0; i < num_nodes; i++){
       k3_pos[j][i] = node_pos[j][i] + step_size*k2_vel[j][i]/2.0f;
       k3_vel[j][i] = node_vel[j][i] + step_size*k2_acc[j][i]/2.0f;
@@ -137,7 +159,7 @@ void Scanner::timerCallback(){
   }
   ode(k3_pos,k3_vel,k3_acc);
 
-  for(unsigned j = 0; j < 3; j++){
+  for(unsigned j = 0; j < 2; j++){
     for(unsigned i = 0; i < num_nodes; i++){
       k4_pos[j][i] = node_pos[j][i] + step_size*k3_vel[j][i];
       k4_vel[j][i] = node_vel[j][i] + step_size*k3_acc[j][i];
@@ -145,7 +167,7 @@ void Scanner::timerCallback(){
   }
   ode(k4_pos,k4_vel,k4_acc);
 
-  for(unsigned j = 0; j < 3; j++){
+  for(unsigned j = 0; j < 2; j++){
     for(unsigned i = 0; i < num_nodes; i++){
       node_pos[j][i] = node_pos[j][i] + step_size*(k1_vel[j][i] + 2*k2_vel[j][i] + 2*k3_vel[j][i] + k4_vel[j][i])/6.0f;
       node_vel[j][i] = node_vel[j][i] + step_size*(k1_acc[j][i] + 2*k2_acc[j][i] + 2*k3_acc[j][i] + k4_acc[j][i])/6.0f;
@@ -153,18 +175,21 @@ void Scanner::timerCallback(){
   }
   
   computeScanTable();
+  
+  
 }
-void Scanner::ode(float (&pos)[3][num_nodes], float (&vel)[3][num_nodes], float (&acc)[3][num_nodes]){
-  for(int i = 0; i < num_nodes; i++){
-    int idx_prev = (i-1+num_nodes)%num_nodes;
-    int idx_next = (i+1)%num_nodes;
+void Scanner::ode(float (&pos)[2][num_nodes], float (&vel)[2][num_nodes], float (&acc)[2][num_nodes]){
+  //endpoints are fixed
+  for(int i = 1; i < num_nodes-1; i++){
+    int idx_prev = i-1;
+    int idx_next = i+1;
 
     float f_damping;
     float f_spring_prev;
     float f_spring_next;
     float f_restore;
     
-    for(int j = 0; j < 3; j++){
+    for(int j = 0; j < 2; j++){
       f_damping = vel[j][i]*(node_damping[i]*damping_gain + damping_offset);
       f_spring_prev = (pos[j][idx_prev] - pos[j][i])*(connection_k[idx_prev]*connection_gain + connection_offset);
       f_spring_next = (pos[j][idx_next] - pos[j][i])*(connection_k[idx_next]*connection_gain + connection_offset);
@@ -181,22 +206,12 @@ void Scanner::ode(float (&pos)[3][num_nodes], float (&vel)[3][num_nodes], float 
         f_spring_next + 
         f_restore;
     }
-    
-    
-    
   }
-
-  /*
-  for(int i = 0; i < num_nodes; i++){
-    pos[0][i] += (step_size*vel[0][i]);
-    pos[1][i] += (step_size*vel[1][i]);
-    pos[2][i] += (step_size*vel[2][i]);
-    
-    vel[0][i] += (step_size*acc[0][i]);
-    vel[1][i] += (step_size*acc[1][i]);
-    vel[2][i] += (step_size*acc[2][i]);
-  }
-  */
+  
+  acc[0][0] = 0;
+  acc[1][0] = 0;
+  acc[0][num_nodes-1] = 0;
+  acc[1][num_nodes-1] = 0;
   
 }
 
@@ -251,41 +266,55 @@ void Scanner::getSampleBlock(float **block, int len){
     return;
   }
   
+  float copied_scan_table[num_nodes];
+  
+  {
+    const juce::ScopedLock sl(mutex_scan_table_);
+    for(int i = 0; i < num_nodes; i++){
+      copied_scan_table[i] = scan_table[i];
+    }
+  }
+
+  
   
   int lower;
   int upper;
   float diff;
   int scan_len = num_nodes;
   float p_freq = scan_freq;
-  float temp = p_freq*((float)scan_len)/(sample_rate);
+  float temp = p_freq*((float)scan_len-1)/(sample_rate);
   
   float avg = 0;
   for(int i = 0; i < num_nodes; i++){
-    avg += scan_table[i];
+    avg += copied_scan_table[i];
   }
   avg /= (float) num_nodes;
-
+  
   Eigen::Vector3f t_val;
   Eigen::Vector3f x_val;
   Eigen::Vector3f y_val;
   Eigen::Vector3f coeffs;
   Eigen::Matrix3f vand_matrix;
+  float temp_scan_idx;
   for(int i = 0; i < len; i++){
-    /*
     //linear interpolation right here. Good. Not great.
-    lower = floorf(scan_idx);
-    upper = (lower+1) % scan_len;
-    diff = scan_idx - lower;
-    float sample = scan_table[lower]*(1-diff) + scan_table[upper]*(diff); //interpolate along scan table axis
-    */
+    temp_scan_idx = fmod(scan_idx, scan_len-1);
     
+    lower = floorf(temp_scan_idx);
+    upper = (lower+1) % (scan_len-1);
+    diff = temp_scan_idx - lower;
+    float sample = copied_scan_table[lower]*(1-diff) + copied_scan_table[upper]*(diff); //interpolate along scan table axis
+    sample = scan_idx > (scan_len-1) ? -sample : sample;
+       
+    /*
     for(unsigned j = 0; j < 3; j++){
-      unsigned idx = (j-1+num_nodes)%num_nodes;
+      unsigned idx = (j-1+num_nodes-1)%(num_nodes-1);
       x_val[j] = idx;
-      y_val[j] = scan_table[idx];
+      y_val[j] = copied_scan_table[idx];
     }
 
     //construct vandermonde matrix
+    
     for(unsigned r = 0; r < 3; r++){
       vand_matrix(r,0) = 1;
       for(unsigned c = 1; c < 3; c++){
@@ -295,20 +324,36 @@ void Scanner::getSampleBlock(float **block, int len){
 
     t_val[0] = 1;
     for(unsigned j = 1; j < 3; j++){
-      t_val[j] = t_val[j-1]*scan_idx; 
+      t_val[j] = t_val[j-1]*temp_scan_idx; 
     }
     
     coeffs = vand_matrix.inverse()*y_val;
     
     float sample = coeffs.dot(t_val);
+    */
+
+    /*
+    int lower = floorf(temp_scan_idx);
+    float sample = 0;
+    for(int i = -31; i < 32; i++){
+      int m = i + lower;
+      float x_m = copied_scan_table[(scan_len-1 + m) % (scan_len-1)];
+      float temp = temp_scan_idx - m;
+      float h_n_m = temp == 0 ? 1: sinf(M_PI_2*temp)/(M_PI_2*temp);
+      sample += (x_m * h_n_m); //this is one of them converlutions.
+    }
+    */ 
     
-    block[0][i] = compressAudio(sample, 100, .05, .01, 0)*.5;
+    
+    //float sample = copied_scan_table[(int)floorf(temp_scan_idx)];
+    
+    
+    //compressAudio(sample, 100, .05, .01, 0)*.5;
+    block[0][i] = sample; //lp_filter.tick(sample);
     block[1][i] = block[0][i];
     
-    scan_idx = fmod(scan_idx+temp, scan_len);
-  }
-  
-  
+    scan_idx = fmod(scan_idx+temp, 2*(scan_len-1));
+  }  
   
 }
 
