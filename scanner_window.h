@@ -21,6 +21,7 @@ typedef struct{
 using namespace Eigen;
 
 
+
 class ScannerWindow   : public juce::AnimatedAppComponent{
 public:
   ScannerWindow(Scanner *s);
@@ -34,8 +35,7 @@ public:
   void drawLines(juce::Graphics& g, Vector3f *start_point, Vector3f *end_point, int len);
   
 private:
-  Scanner *scanner;
-  Vector3f origin;
-    
-  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ScannerWindow)
+    Scanner *scanner;
+    Vector3f origin;
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ScannerWindow)
 };

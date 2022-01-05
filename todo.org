@@ -1,7 +1,33 @@
 
-* The whole thing
-
 
 * Synchronize samples with scan updates
-  So that a scanner update occurs every x samples
+  Done creating an oscillator.
+  I'll work on adding knobs for the gui.
+  Also I want to try to create a plugin just as a test run so I can learn how.
+  Honestly not too excited by the thing in its current state.
+  It does look kinda cool though but sounds pretty boring.
+
+
+* DONE Harshness solved
+  Added mirroring of the waveform, additionally, updates to the wavetable
+  are only applied after zero crossing. Sounds buttery but metallic due to harmonics I think.
+  
+* TODO Add 3D fairlight visualization
+  cool receding 3d wave thing (opengl)
+  
+* TODO Respond to midi
+  Mostly for personal use. I dont think this will have a use as plugin. 
+  Mostly done. Juce made it easy.
+
+* DONE Explore Wavetable Interpolation
+  Tried sinc interpolation, but didn't hear any improvements.
+  Using linear now. The reason I dont think sinc worked is because 
+  the wavetable is sampled at less than 44100 depending on pitch,
+  so we won't be seeing any improvements as sinc filter just lowpasses
+  the wavetable.
+* DONE Polynomial interpolation in the tick function?
+  Possibly lead to smooth sound. Currently sounds kinda harsh and idk why.
+  I think I tried this actually year ago in the original synth code and it wasn't very itneresting.
+  Effect is pretty negligible.
+
   
