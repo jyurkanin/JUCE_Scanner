@@ -44,9 +44,10 @@ private:
   
   juce::Slider connectionSlider;
   juce::Label  connectionLabel;
-  
-  juce::Slider restoringSlider;
-  juce::Label  restoringLabel;
+
+  juce::Slider paramC3Slider;
+  juce::Label  paramC3Label;
+    
   
   juce::MidiKeyboardState keyboardState;
   juce::MidiKeyboardComponent keyboardComponent;

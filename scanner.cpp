@@ -9,8 +9,8 @@
 
 
 Scanner::Scanner(){
-  log_file.open("/home/justin/juce_log.csv");
-  log_file << "idx,sample\n";
+    //log_file.open("/home/justin/juce_log.csv");
+    //log_file << "idx,sample\n";
   
   bsize = 441;
   scan_buffer.resize(bsize);
@@ -24,6 +24,8 @@ Scanner::Scanner(){
   for(int i = 0; i < num_nodes; i++){
     node_pos[0][i] = CONST_DX*i;
     node_pos[1][i] = 0;
+    node_pos[2][i] = CONST_DX*i;
+    node_pos[3][i] = 0;
     
     node_eq_pos[0][i] = CONST_DX*i;
     node_eq_pos[1][i] = 0;
@@ -32,53 +34,37 @@ Scanner::Scanner(){
   for(int i = 0; i < num_nodes; i++){
     node_vel[0][i] = 0;
     node_vel[1][i] = 0;
+    node_vel[2][i] = 0;
+    node_vel[3][i] = 0;
     
     node_acc[0][i] = 0;
     node_acc[1][i] = 0;
-    
-    node_damping[i] = 0;
-    restoring_k[i] = 0;
+    node_acc[2][i] = 0;
+    node_acc[3][i] = 0;
     
     scan_table[0][i] = node_pos[0][i];
     scan_table[1][i] = 0;
   }
-
-  damping_offset = -.1;
-  connection_offset = 1; //without this, poorly connected waveforms can result.
-  restoring_offset = 1;
   
-  damping_gain = 0; //lol this has to be negative. Or system will go unstable. Duh.
-  connection_gain = 2;
-  restoring_gain = .1;
-  hammer_gain = 1;
-  eq_pos_gain = 1;
-  
+  damping_gain = 0; //lol this has to positive. Or system will go unstable. Duh.
+  connection_gain = 1;
+  distortion_c3 = .001f;
   
   fillWithWaveform(0, hammer_table, num_nodes);
-  //fillWithWaveform(0, node_damping, num_nodes);
-  //fillWithWaveform(0, connection_k, num_nodes);
-  //fillWithWaveform(0, restoring_k, num_nodes);
-
-  //fillWithWaveform(21, node_eq_pos[2], num_nodes);
-  //fillWithWaveform(0, node_pos[1], num_nodes);
-  //fillWithWaveform(0, scan_table, num_nodes);
   
-  for(int i = 0; i < num_nodes; i++){
-    node_damping[i] = std::max(node_damping[i], 0.0f);
-    connection_k[i] = std::max(connection_k[i], 0.0f);
-    restoring_k[i] = std::max(restoring_k[i], 0.0f);
-  }
-
   lp_filter.setCutoff(4000.0f);
   lp_filter.setQFactor(.1f);
+  
+  should_swap = 0;
+  buf_idx = 0;
 }
 
 Scanner::~Scanner(){
-  log_file.close();
+    //log_file.close();
 }
 
 void Scanner::log_value(float val, float sample){
-  log_file << val << ',' << sample << '\n';
+    //log_file << val << ',' << sample << '\n';
 }
 
 void Scanner::setSampleRate(float sr){
@@ -86,13 +72,15 @@ void Scanner::setSampleRate(float sr){
 }
 
 void Scanner::strike(){
-  for(int i = 0; i < num_nodes; i++){
-    node_pos[1][i] = hammer_table[i];
-    node_vel[0][i] = 0;
-    node_vel[1][i] = 0;
-  }
+    int other_buf = buf_idx ^ 0b10;
+    for(int i = 0; i < num_nodes; i++){
+        node_pos[other_buf+1][i] = hammer_table[i];
+        node_vel[other_buf][i] = 0;
+        node_vel[other_buf+1][i] = 0;
+    }
 }
 
+//this isn't used.
 void Scanner::computeScanTable(){
   const juce::ScopedLock sl(mutex_scan_table_);
   //lock this function to 
@@ -116,154 +104,185 @@ void Scanner::timerCallbackEuler(){
     //for(int ii = 0; ii < 10; ii++){
   
     ode(node_pos, node_vel, node_acc);
-  
-    for(unsigned j = 0; j < 2; j++){
+    
+    for(unsigned j = buf_idx; j < (buf_idx + 2); j++){
       for(unsigned i = 0; i < num_nodes; i++){
         node_pos[j][i] = node_pos[j][i] + step_size*node_vel[j][i];
         node_vel[j][i] = node_vel[j][i] + step_size*node_acc[j][i];
       }
     }
     
-    computeScanTable();
+    //computeScanTable();
     
     //}
 }
 
 
+//This is the symplectic euler integrator (for hamilotonian systems)
+void Scanner::timerCallbackSymEuler(){
+    ode(node_pos, node_vel, node_acc);
+    
+    for(unsigned j = buf_idx; j < (buf_idx + 2); j++){
+        for(unsigned i = 0; i < num_nodes; i++){
+            node_vel[j][i] = node_vel[j][i] + step_size*node_acc[j][i];
+            node_pos[j][i] = node_pos[j][i] + step_size*node_vel[j][i];
+        }
+    }
+}
+
+
+
 void Scanner::timerCallbackRK4(){
-  float k1_pos[2][num_nodes];
-  float k1_vel[2][num_nodes];
-  float k1_acc[2][num_nodes];
-
-  float k2_pos[2][num_nodes];
-  float k2_vel[2][num_nodes];
-  float k2_acc[2][num_nodes];
-
-  float k3_pos[2][num_nodes];
-  float k3_vel[2][num_nodes];
-  float k3_acc[2][num_nodes];
-
-  float k4_pos[2][num_nodes];
-  float k4_vel[2][num_nodes];
-  float k4_acc[2][num_nodes];
+    //I could have had everything be 2 rows and num_nodes cols but I was lazy.
+    //And memory is nearly infinite so who cares.
+    float k1_pos[4][num_nodes];
+    float k1_vel[4][num_nodes];
+    float k1_acc[4][num_nodes];
+    
+    float k2_pos[4][num_nodes];
+    float k2_vel[4][num_nodes];
+    float k2_acc[4][num_nodes];
+    
+    float k3_pos[4][num_nodes];
+    float k3_vel[4][num_nodes];
+    float k3_acc[4][num_nodes];
+    
+    float k4_pos[4][num_nodes];
+    float k4_vel[4][num_nodes];
+    float k4_acc[4][num_nodes];
   
   
-  for(unsigned j = 0; j < 2; j++){
-    for(unsigned i = 0; i < num_nodes; i++){
-      k1_pos[j][i] = node_pos[j][i];
-      k1_vel[j][i] = node_vel[j][i];
+    for(unsigned j = buf_idx; j < (buf_idx + 2); j++){
+        for(unsigned i = 0; i < num_nodes; i++){
+            k1_pos[j][i] = node_pos[j][i];
+            k1_vel[j][i] = node_vel[j][i];
+        }
     }
-  }
-  ode(k1_pos,k1_vel,k1_acc);
+    ode(k1_pos,k1_vel,k1_acc);
 
-  for(unsigned j = 0; j < 2; j++){
-    for(unsigned i = 0; i < num_nodes; i++){
-      k2_pos[j][i] = node_pos[j][i] + step_size*k1_vel[j][i]/2.0f;
-      k2_vel[j][i] = node_vel[j][i] + step_size*k1_acc[j][i]/2.0f;
+    for(unsigned j = buf_idx; j < (buf_idx + 2); j++){
+        for(unsigned i = 0; i < num_nodes; i++){
+            k2_pos[j][i] = node_pos[j][i] + step_size*k1_vel[j][i]/2.0f;
+            k2_vel[j][i] = node_vel[j][i] + step_size*k1_acc[j][i]/2.0f;
+        }
     }
-  }
-  ode(k2_pos,k2_vel,k2_acc);
+    ode(k2_pos,k2_vel,k2_acc);
 
-  for(unsigned j = 0; j < 2; j++){
-    for(unsigned i = 0; i < num_nodes; i++){
-      k3_pos[j][i] = node_pos[j][i] + step_size*k2_vel[j][i]/2.0f;
-      k3_vel[j][i] = node_vel[j][i] + step_size*k2_acc[j][i]/2.0f;
+    for(unsigned j = buf_idx; j < (buf_idx + 2); j++){
+        for(unsigned i = 0; i < num_nodes; i++){
+            k3_pos[j][i] = node_pos[j][i] + step_size*k2_vel[j][i]/2.0f;
+            k3_vel[j][i] = node_vel[j][i] + step_size*k2_acc[j][i]/2.0f;
+        }
     }
-  }
-  ode(k3_pos,k3_vel,k3_acc);
+    ode(k3_pos,k3_vel,k3_acc);
 
-  for(unsigned j = 0; j < 2; j++){
-    for(unsigned i = 0; i < num_nodes; i++){
-      k4_pos[j][i] = node_pos[j][i] + step_size*k3_vel[j][i];
-      k4_vel[j][i] = node_vel[j][i] + step_size*k3_acc[j][i];
+    for(unsigned j = buf_idx; j < (buf_idx + 2); j++){
+        for(unsigned i = 0; i < num_nodes; i++){
+            k4_pos[j][i] = node_pos[j][i] + step_size*k3_vel[j][i];
+            k4_vel[j][i] = node_vel[j][i] + step_size*k3_acc[j][i];
+        }
     }
-  }
-  ode(k4_pos,k4_vel,k4_acc);
+    ode(k4_pos,k4_vel,k4_acc);
 
-  for(unsigned j = 0; j < 2; j++){
-    for(unsigned i = 0; i < num_nodes; i++){
-      node_pos[j][i] = node_pos[j][i] + step_size*(k1_vel[j][i] + 2*k2_vel[j][i] + 2*k3_vel[j][i] + k4_vel[j][i])/6.0f;
-      node_vel[j][i] = node_vel[j][i] + step_size*(k1_acc[j][i] + 2*k2_acc[j][i] + 2*k3_acc[j][i] + k4_acc[j][i])/6.0f;
+    for(unsigned j = buf_idx; j < (buf_idx + 2); j++){
+        for(unsigned i = 0; i < num_nodes; i++){
+            node_pos[j][i] = node_pos[j][i] + step_size*(k1_vel[j][i] + 2*k2_vel[j][i] + 2*k3_vel[j][i] + k4_vel[j][i])/6.0f;
+            node_vel[j][i] = node_vel[j][i] + step_size*(k1_acc[j][i] + 2*k2_acc[j][i] + 2*k3_acc[j][i] + k4_acc[j][i])/6.0f;
+        }
     }
-  }
   
-  computeScanTable();
+    //computeScanTable();
   
 }
 
-
-void Scanner::ode_fancy(float (&pos)[2][num_nodes], float (&vel)[2][num_nodes], float (&acc)[2][num_nodes]){
-  //endpoints are fixed
-  for(int i = 1; i < num_nodes-1; i++){
-    int idx_prev = i-1;
-    int idx_next = i+1;
-    
-    float f_damping;
-    float f_spring_prev;
-    float f_spring_next;
-    float f_restore;
-    
-    for(int j = 0; j < 2; j++){
-      f_damping = vel[j][i]*(node_damping[i]*damping_gain + damping_offset);
-      f_spring_prev = (pos[j][idx_prev] - pos[j][i])*(connection_k[idx_prev]*connection_gain + connection_offset);
-      f_spring_next = (pos[j][idx_next] - pos[j][i])*(connection_k[idx_next]*connection_gain + connection_offset);
-      f_restore = ((node_eq_pos[j][i]*1) - pos[j][i])*(restoring_k[i]*restoring_gain + restoring_offset);
-      
-      //f_damping = 0;
-      //f_spring_next = 0;
-      //f_spring_prev = 0;
-      //f_restore = 0;
-      
-      acc[j][i] =
-        f_damping +
-        f_spring_prev + 
-        f_spring_next + 
-        f_restore;
-    }
-  }
-  
-  acc[0][0] = 0;
-  acc[1][0] = 0;
-  acc[0][num_nodes-1] = 0;
-  acc[1][num_nodes-1] = 0;
-  
-}
-
-
-
-
+/*
 void Scanner::ode(float (&pos)[2][num_nodes], float (&vel)[2][num_nodes], float (&acc)[2][num_nodes]){
-  //endpoints are fixed
-  for(int i = 1; i < num_nodes-1; i++){
-    int idx_prev = i-1;
-    int idx_next = i+1;
-    
-    float f_damping;
-    float f_spring_prev;
-    float f_spring_next;
-    float f_restore;
-    
-    
+    //endpoints are fixed
     for(int j = 0; j < 2; j++){
-      f_damping = vel[j][i]*-damping_gain;
-      f_spring_prev = (pos[j][idx_prev] - pos[j][i])*connection_gain;
-      f_spring_next = (pos[j][idx_next] - pos[j][i])*connection_gain;
-      f_restore = ((node_eq_pos[j][i]*1) - pos[j][i])*restoring_gain;
-      
-      acc[j][i] =
-        f_damping +
-        f_spring_prev + 
-        f_spring_next + 
-        f_restore;
+        float f_damping;
+        float f_spring_prev;
+        float f_spring_next;
+
+        float diff;
+        
+        int idx_prev = 0;
+        int idx_next = 2;
+        for(int i = 1; i < num_nodes-1; i++){
+            f_damping = vel[j][i]*-damping_gain;
+            
+            
+            
+            f_spring_prev = (pos[j][idx_prev] - pos[j][i])*connection_gain;
+            f_spring_next = (pos[j][idx_next] - pos[j][i])*connection_gain;
+            
+            acc[j][i] = f_damping + f_spring_prev + f_spring_next;
+            
+            idx_prev++;
+            idx_next++;
+        }
     }
-  }
-  
-  acc[0][0] = 0;
-  acc[1][0] = 0;
-  acc[0][num_nodes-1] = 0;
-  acc[1][num_nodes-1] = 0;
-  
+    
+    acc[0][0] = 0; //make sure boundary conditions are satisfied.
+    acc[1][0] = 0;
+    acc[0][num_nodes-1] = 0;
+    acc[1][num_nodes-1] = 0;
 }
+*/
+
+
+void Scanner::ode(float (&pos)[4][num_nodes], float (&vel)[4][num_nodes], float (&acc)[4][num_nodes]){
+    //endpoints are fixed
+    for(int j = buf_idx; j < (buf_idx + 2); j++){
+        float f_damping;
+        float f_spring_prev;
+        float f_spring_next;
+
+        float diff;
+        float diff2;
+        float diff3;
+        
+        float c1 = 1;
+        float c2 = 0;
+        float c3 = distortion_c3;
+        
+        float sum;
+        
+        int idx_prev = 0;
+        int idx_next = 2;
+        for(int i = 1; i < num_nodes-1; i++){
+            f_damping = vel[j][i]*-damping_gain;
+            
+            diff = pos[j][idx_prev] - pos[j][i];
+            sum = c1*diff;
+            //diff2 = diff*diff;
+            //sum += c2*diff2;
+            //diff3 = diff2*diff;
+            //sum += -c3*tanhf(diff3);
+            
+            f_spring_prev = sum*connection_gain;
+            
+            diff = pos[j][idx_next] - pos[j][i];
+            sum = c1*diff;
+            //diff2 = diff*diff;
+            //sum += c2*diff2;
+            //diff3 = diff2*diff;
+            //sum += -c3*tanhf(diff3);
+            
+            f_spring_next = sum*connection_gain;
+            
+            acc[j][i] = f_damping + f_spring_prev + f_spring_next;
+            
+            idx_prev++;
+            idx_next++;
+        }
+    }
+    
+    acc[buf_idx][0] = 0; //make sure boundary conditions are satisfied.
+    acc[buf_idx+1][0] = 0;
+    acc[buf_idx][num_nodes-1] = 0;
+    acc[buf_idx+1][num_nodes-1] = 0;
+}
+
 
 void Scanner::setFreq(float f){
   scan_freq = f;
@@ -308,129 +327,7 @@ float Scanner::compressAudio(float in, float attack, float threshold, float rati
 
 
 void Scanner::getSampleBlock(float **block, int len){ 
-  //don't access the scan_buffer. it is getting resized and will segfault.
-  if(bresize_mutex){
-    for(int i = 0; i < len; i++){
-      block[0][i] = 0;
-      block[1][i] = 0;
-    }
-    return;
-  }
-
-  float copied_scan_table[2][num_nodes]; //original scan table
-  
-  {
-    const juce::ScopedLock sl(mutex_scan_table_);
-    for(int i = 0; i < num_nodes; i++){
-      copied_scan_table[0][i] = scan_table[0][i];
-      copied_scan_table[1][i] = scan_table[1][i];
-    }
-  }
-  
-  //After zero crossing we can smoothly transition
-  //from copied_scan_tble to updted_scan_table
-  float updated_scan_table[2][num_nodes];
-  for(int i = 0; i < num_nodes; i++){
-      updated_scan_table[0][i] = scan_table[0][i];
-      updated_scan_table[1][i] = scan_table[1][i];
-  }
-    
-  
-  int lower;
-  int upper;
-  float diff;
-  int scan_len = num_nodes;
-  float p_freq = scan_freq;
-  float temp = p_freq*((float)scan_len-1)/(sample_rate);
-  
-  Eigen::Vector3f t_val;
-  Eigen::Vector3f x_val;
-  Eigen::Vector3f y_val;
-  Eigen::Vector3f coeffs;
-  Eigen::Matrix3f vand_matrix;
-  static int temp_scan_idx = 0;
-  
-  for(int i = 0; i < len; i++){
-    for(int j = 0; j < (scan_len-1); j++){
-        if(node_pos[0][j] <= scan_idx){
-            temp_scan_idx = j;
-        }
-        else{
-            break;
-        }
-    }
-    
-    //need to detect zero crossing, and update wvetable only fter zero crossing.
-    if(temp_scan_idx == 0){
-        for(int j = 0; j < num_nodes; j++){
-            copied_scan_table[0][j] = updated_scan_table[0][j];
-            copied_scan_table[1][j] = updated_scan_table[1][j];
-        }
-    }
-
-    /*
-    lower = temp_scan_idx;
-    upper = lower+1; //(lower+1) % (scan_len-1);
-    diff = (scan_idx - copied_scan_table[0][lower]) / (copied_scan_table[0][upper] - copied_scan_table[0][lower]);
-    float sample = copied_scan_table[1][lower]*(1-diff) + copied_scan_table[1][upper]*(diff); //interpolate along scan table axis
-    */
-
-    
-    //log_value(node_pos[0][lower], sample);
-    
-    /*
-    //polynomial interpolation
-    for(unsigned j = 0; j < 3; j++){
-      unsigned idx = (j-1 + num_nodes-1)%(num_nodes-1);
-      x_val[j] = idx;
-      y_val[j] = copied_scan_table[1][idx];
-    }
-
-    //construct vandermonde matrix
-    
-    for(unsigned r = 0; r < 3; r++){
-      vand_matrix(r,0) = 1;
-      for(unsigned c = 1; c < 3; c++){
-        vand_matrix(r,c) = vand_matrix(r,c-1) * x_val[r];
-      }
-    }
-
-    t_val[0] = 1;
-    for(unsigned j = 1; j < 3; j++){
-      t_val[j] = t_val[j-1]*temp_scan_idx; 
-    }
-    
-    coeffs = vand_matrix.inverse()*y_val;
-    
-    float sample = coeffs.dot(t_val);
-    */
-
-    
-    // sinc interpolation
-    int lower = floorf(scan_idx);
-    float sample = 0;
-    for(int i = -31; i < 32; i++){
-      int m = i + lower;
-      m = (scan_len-1 + m) % (scan_len-1);
-      
-      float x_m = copied_scan_table[1][m];
-      float temp = scan_idx - m;
-      float h_n_m = temp == 0 ? 1: sinf(M_PI_2*temp)/(M_PI_2*temp);
-      sample += (x_m * h_n_m); //this is one of them converlutions.
-    }
-     
-    
-    
-    //Float sample = copied_scan_table[(int)floorf(temp_scan_idx)];
-    
-    
-    //compressAudio(sample, 100, .05, .01, 0)*.5;
-    block[0][i] = sample; //lp_filter.tick(sample);
-    block[1][i] = block[0][i];
-    
-    scan_idx = fmod(scan_idx + temp, node_pos[0][scan_len-1]);
-  }  
-  
+    //ignoreme.
 }
 
 
@@ -482,4 +379,38 @@ void Scanner::fillWithWaveform(int num, float* table, int table_len){
       }            
     }
   }
+
+  for(int i = 1; i < scan_len; i++){
+      table[i] -= table[0];
+  }
+  table[0] -= table[0];
+  
+  table[scan_len-1] = table[0];
 }
+
+
+//Swap completed. 
+void Scanner::ack_buffer_swap(){
+    should_swap = 0;
+}
+
+//request swap. Will be performed when it is safe to do so.
+void Scanner::req_buffer_swap(){
+    should_swap = 1;
+}
+
+void Scanner::swap_buffers(){
+    buf_idx ^= 0b10; //nice
+}
+
+
+
+
+
+
+
+
+
+
+
+

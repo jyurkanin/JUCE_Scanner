@@ -32,15 +32,20 @@ void ScannerVoice::startNote (int midiNoteNumber, float velocity,
     level = velocity * 0.05;
     tailOff = 0.0;
 
-    //Then we will need to interpolate between prev and current scan table (or else it will click)
-    if(adsr.isActive()){
-        table_xfade_counter = NUM_TABLE_XFADE_SAMPLES;
-        scanner_osc.strike();
-        scanner_osc.req_buffer_swap();
-    }
-    else{
-        scanner_osc.strike();
-        scanner_osc.req_buffer_swap();
+    { //critical section.
+        const juce::ScopedLock sl(mutex_scan_table_);
+        //Then we will need to interpolate between prev and current scan table (or else it will click)
+        if(adsr.isActive()){
+            table_xfade_counter = NUM_TABLE_XFADE_SAMPLES;
+            for(int i = 0; i < scan_table_len; i++){
+                prev_table[i] = scanner_osc.node_pos[1][i];
+            }
+        
+            scanner_osc.strike();    
+        }
+        else{
+            scanner_osc.strike();    
+        }
     }
     
     cycles_per_second = juce::MidiMessage::getMidiNoteInHertz(midiNoteNumber);
@@ -89,22 +94,15 @@ void ScannerVoice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int 
     int temp_scan_idx = 0;
     
     
-    for(int ii = startSample; ii < numSamples; ii++){ {
+    for(int ii = startSample; ii < numSamples; ii++){
+        {
            //scan table critical section
+            const juce::ScopedLock sl(mutex_scan_table_);
             if((t_ % 10) == 0){
                 scanner_osc.timerCallbackSymEuler(); //
             }
-
-            
-            if(scanner_osc.should_swap){
-                scanner_osc.swap_buffers();
-                scanner_osc.ack_buffer_swap();
-            }
-            
+        
             //figure out x position for interpolation
-            
-            //In practice, I've noticed the x positions dont change a whole
-            //lot so lets not worry about it
             for(int j = 0; j < (scan_table_len-1); j++){
                 if(scanner_osc.node_pos[0][j] <= scan_idx){
                     temp_scan_idx = j;
@@ -114,27 +112,23 @@ void ScannerVoice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int 
                 }
             }
             
-            
             lower = temp_scan_idx;
             upper = lower+1;
-            //lower = floorf(scan_idx);
-            //upper = (lower+1) % scanner_osc.num_nodes;
-            
-            float lower_val = scanner_osc.node_pos[scanner_osc.buf_idx+1][lower];
-            float upper_val = scanner_osc.node_pos[scanner_osc.buf_idx+1][upper];
+
+            float lower_val = scanner_osc.node_pos[1][lower];
+            float upper_val = scanner_osc.node_pos[1][upper];
             float mix;
-            unsigned other_buf = scanner_osc.buf_idx ^ 0b10;
             if(table_xfade_counter > 0){
                 mix = (float)table_xfade_counter / NUM_TABLE_XFADE_SAMPLES;
-                lower_val = (mix*scanner_osc.node_pos[other_buf+1][lower]) + ((1-mix)*lower_val);
-                upper_val = (mix*scanner_osc.node_pos[other_buf+1][upper]) + ((1-mix)*upper_val);
+                lower_val = (mix*prev_table[lower]) + ((1-mix)*lower_val);
+                upper_val = (mix*prev_table[upper]) + ((1-mix)*upper_val);
                 table_xfade_counter--; 
             }
             //LOGFILE::log_value(mix);
-            
-            diff = (scan_idx - scanner_osc.node_pos[scanner_osc.buf_idx+0][lower]) / (scanner_osc.node_pos[scanner_osc.buf_idx+0][upper] - scanner_osc.node_pos[scanner_osc.buf_idx+0][lower]);
+        
+            diff = (scan_idx - scanner_osc.node_pos[0][lower]) / (scanner_osc.node_pos[0][upper] - scanner_osc.node_pos[0][lower]);
             sample = lower_val*(1-diff) + upper_val*(diff); //interpolate along scan table axis
-            
+
         } //end scan table critical section
         
         float gain = adsr.getNextSample();

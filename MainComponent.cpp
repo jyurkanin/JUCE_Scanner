@@ -7,6 +7,15 @@
 MainComponent::MainComponent()
     :  keyboardComponent(keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard)
 {
+    
+    const juce::OwnedArray<juce::AudioIODeviceType>& io_devices = deviceManager.getAvailableDeviceTypes();
+    juce::String dn("JACK");
+    deviceManager.setCurrentAudioDeviceType(dn, true);
+    
+//    for(int i = 0; i < io_devices.size(); i++){
+//        juce::String dn = io_devices[i]->getTypeName();
+//    }
+    
     //the midi gui bullshit (mostly copy pasted from the tutorial)
     addAndMakeVisible(keyboardComponent);    
     addAndMakeVisible(midiInputListLabel);
@@ -35,6 +44,17 @@ MainComponent::MainComponent()
         setMidiInput (0);
     }
 
+    
+    printf("ODE speed test\n");
+    long start_time = juce::Time::currentTimeMillis();
+    for(int i = 0; i < 1000000; i++){
+        scanner.timerCallbackSymEuler();
+    }
+    long stop_time = juce::Time::currentTimeMillis();
+    printf("1,000,000 EulerSym Duration %ld\n", stop_time - start_time);
+    
+    
+    
     //Custom scanner related stuff
     scanner_window = new ScannerWindow(&scanner);
     for (int i = 0; i < 1; ++i) {
@@ -62,7 +82,8 @@ MainComponent::MainComponent()
     
     
     addAndMakeVisible(dampingSlider);
-    dampingSlider.setRange(.001, 10.0f, .1f);
+    dampingSlider.setRange(.001f, 1.0f, .001f);
+    dampingSlider.setSkewFactorFromMidPoint(.1f);
     dampingSlider.setTextValueSuffix(" ");
     dampingSlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
     dampingSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxAbove,false,60,25);
@@ -83,19 +104,20 @@ MainComponent::MainComponent()
     addAndMakeVisible(connectionLabel);
     connectionLabel.setText("Edge", juce::dontSendNotification);
     connectionLabel.attachToComponent(&connectionSlider, false);
-    
-    addAndMakeVisible(restoringSlider);
-    restoringSlider.setRange(0, 10.0f, .1f);
-    restoringSlider.setTextValueSuffix("");
-    restoringSlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
-    restoringSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxAbove,false,60,25);
-    restoringSlider.setValue(0.0);
-    restoringSlider.addListener(this);
-    addAndMakeVisible(restoringLabel);
-    restoringLabel.setText("Center", juce::dontSendNotification);
-    restoringLabel.attachToComponent(&restoringSlider, false);
-    
-    
+        
+
+    addAndMakeVisible(paramC3Slider);
+    paramC3Slider.setRange(0.0f, 100.0f, .01f);
+    paramC3Slider.setTextValueSuffix("");
+    paramC3Slider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
+    paramC3Slider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxAbove,false,60,25);
+    paramC3Slider.setValue(0.001f);
+    paramC3Slider.addListener(this);
+    addAndMakeVisible(paramC3Label);
+    paramC3Label.setText("C3", juce::dontSendNotification);
+    paramC3Label.attachToComponent(&paramC3Slider, false);
+
+
     
     // Make sure you set the size of the component after
     // you add any child components
@@ -170,15 +192,16 @@ void MainComponent::resized(){
   
   scanner_window->setBounds(0,0,getWidth(), scanner_window_height);
   
-  hammerTableSlider.setBounds(0,                 slider_y_pos, slider_width,slider_height);
-  dampingSlider.setBounds(slider_width,     slider_y_pos, slider_width,slider_height);
-  connectionSlider.setBounds(slider_width*2,slider_y_pos, slider_width,slider_height);
-  restoringSlider.setBounds(slider_width*3, slider_y_pos, slider_width,slider_height);
+  hammerTableSlider.setBounds(0,             slider_y_pos, slider_width, slider_height);
+  dampingSlider.setBounds(slider_width,      slider_y_pos, slider_width, slider_height);
+  connectionSlider.setBounds(slider_width*2, slider_y_pos, slider_width, slider_height);
+  paramC3Slider.setBounds(slider_width*3,    slider_y_pos, slider_width, slider_height);
   
-  int keyboard_y_pos = slider_y_pos + slider_height + 100;
+  int keyboard_y_pos = slider_y_pos + slider_height + 50;
   int keyboard_height = 200;
   int keyboard_width = 200;
-  //midiInputList.setBounds(200, 10, keyboard_width - 10, 20);
+  
+  midiInputList.setBounds(10, keyboard_y_pos - 30, keyboard_width, 20);
   keyboardComponent.setBounds(10,  keyboard_y_pos, keyboard_width, keyboard_height);  
 }
 
@@ -192,7 +215,8 @@ void MainComponent::sliderValueChanged(juce::Slider* slider) {
   else if(slider == &connectionSlider){
     scanner.connection_gain = connectionSlider.getValue();
   }
-  else if(slider == &restoringSlider){
-    scanner.restoring_gain = restoringSlider.getValue();
+  else if(slider == &paramC3Slider){
+    scanner.distortion_c3 = paramC3Slider.getValue();
   }
+
 }

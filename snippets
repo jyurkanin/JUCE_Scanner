@@ -1,0 +1,25 @@
+Euler Duration 1377
+Symp Euler Duration 1145
+RK4 Duration 7389
+
+    printf("Lets do a test between euler, symplectic euler, and rk4\n");
+    long start_time = juce::Time::currentTimeMillis();
+    for(int i = 0; i < 1000000; i++){
+        scanner.timerCallbackEuler();
+    }
+    long stop_time = juce::Time::currentTimeMillis();
+    printf("Euler Duration %ld\n", stop_time - start_time);
+    
+    start_time = juce::Time::currentTimeMillis();
+    for(int i = 0; i < 1000000; i++){
+        scanner.timerCallbackSymEuler();
+    }
+    stop_time = juce::Time::currentTimeMillis();
+    printf("Symp Euler Duration %ld\n", stop_time - start_time);
+    
+    start_time = juce::Time::currentTimeMillis();
+    for(int i = 0; i < 1000000; i++){
+        scanner.timerCallbackRK4();
+    }
+    stop_time = juce::Time::currentTimeMillis();
+    printf("RK4 Duration %ld\n", stop_time - start_time);

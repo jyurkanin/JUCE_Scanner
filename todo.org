@@ -1,23 +1,77 @@
 
 
-* Synchronize samples with scan updates
-  Done creating an oscillator.
-  I'll work on adding knobs for the gui.
-  Also I want to try to create a plugin just as a test run so I can learn how.
-  Honestly not too excited by the thing in its current state.
-  It does look kinda cool though but sounds pretty boring.
 
+* Bruh
+  75 and 79 sounded fucking nuts.
+
+* TODO DEbug click
+  Clicks when changing notes.
+  I verified the envelope is continuous no matter what, so thats not the problem.
+  Idk wtf the problem is.
+  The problem was pulse audio being retarded.
+  The problem mostly goes away with jack.
+  There is still some buffer underrun when playing notes retardedly fast.
+  Could solve this by using a lower latency solver.
+  Will do.
+  
+  Now using symplectic euler. Lowest latency solver. Somehow even better than the regular euler.
+  Still getting some underrun.
+  Could experiment with eigen based vector types in the hope that
+  it allows for better vectorization.
+  
+  I was thinking about creating a lock-free queue for an audio thread/worker thread setup
+  But this would introduce latency. Bad. I should ask Skylar how he solves this problem.
+  
+  Actually I definitely need to remove the mutex in the
+  audio thread and use some kind of atomic operation
+  to replace it or something.
+  
+  Create two node_pos buffers. Have a pointer to a pointer to hold the one
+  currently being used by the ODE. Use an atomic variable to indicate which 
+  buffer is being used. Another atomic variable to signal that a switch should happen.
+  I think this would work.
+  
+  Dont need a ptr to a ptr. Can just change node_pos[2][num_nodes] to node_pos[4][num_nodes]
+  and change which index is adressed when you need to swap. very smart. Good job justin.
+  
+  What do? Think about the atomic operations and see if there could be some access pattern
+  that causes problems.
+
+* DONE Investigate First Order Symplectic Integrator
+  Like euler's method but slightly different.
+  You noticed for some reason that your old synth code was stable
+  when you used an integrator that was "wrong" vs. using euler.
+  Turns out the "wrong" code was actually a 1st order symplectic integrator.
+  
+  Here's a test. For 1,000,000 function evaluations, here is the total runtime in ms
+  
+  Euler Duration 1377
+  Symp Euler Duration 1145
+  RK4 Duration 7389
+  
+  Symp appears to be just as stable as RK4. Will switch to symp.
+  Symp might be giving slightly more high freqency stuff. But I'm not convinced.
 
 * DONE Harshness solved
-  Added mirroring of the waveform, additionally, updates to the wavetable
-  are only applied after zero crossing. Sounds buttery but metallic due to harmonics I think.
+  Wavetable is updated in the audio thread instead of in a separate thread.
+  Update happens at the audio rate leading to very smooth changing waveform.
   
 * TODO Add 3D fairlight visualization
   cool receding 3d wave thing (opengl)
   
-* TODO Respond to midi
+* DONE Respond to midi
   Mostly for personal use. I dont think this will have a use as plugin. 
   Mostly done. Juce made it easy.
+  
+* TODO Portamento
+  Mono legato mode still.
+
+* TODO Add some kind of fun nonlinearity
+  Hmm even and odd distortion.
+  stiffness = (x^3 - x)
+  Result is chaotic and cool
+
+* TODO Menu for selecting a wavefile instead of a fucking slider
 
 * DONE Explore Wavetable Interpolation
   Tried sinc interpolation, but didn't hear any improvements.

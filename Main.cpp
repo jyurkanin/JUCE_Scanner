@@ -7,6 +7,7 @@
 #include <fenv.h>
 #include <JuceHeader.h>
 #include "MainComponent.h"
+#include "log_value.h"
 
 
 class ScannerApplication  : public juce::JUCEApplication{
@@ -17,9 +18,9 @@ public:
     bool moreThanOneInstanceAllowed() override             { return true; }
     void initialise (const juce::String& commandLine) override
     {
-      
+        LOGFILE::open_log();
         //feenableexcept(FE_INVALID | FE_OVERFLOW);
-      mainWindow.reset (new MainWindow (getApplicationName()));
+        mainWindow.reset (new MainWindow (getApplicationName()));
     }
 
     void shutdown() override
@@ -65,6 +66,7 @@ public:
             // ask the app to quit when this happens, but you can change this to do
             // whatever you need.
             JUCEApplication::getInstance()->systemRequestedQuit();
+            LOGFILE::close_log();
         }
         /* Note: Be careful if you override any DocumentWindow methods - the base
            class uses a lot of them, so by overriding you might break its functionality.
