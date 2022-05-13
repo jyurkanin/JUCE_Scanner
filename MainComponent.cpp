@@ -45,13 +45,13 @@ MainComponent::MainComponent()
     }
 
     
-    printf("ODE speed test\n");
-    long start_time = juce::Time::currentTimeMillis();
-    for(int i = 0; i < 1000000; i++){
-        scanner.timerCallbackSymEuler();
-    }
-    long stop_time = juce::Time::currentTimeMillis();
-    printf("1,000,000 EulerSym Duration %ld\n", stop_time - start_time);
+    // printf("ODE speed test\n");
+    // long start_time = juce::Time::currentTimeMillis();
+    // for(int i = 0; i < 1000000; i++){
+    //     scanner.timerCallbackSymEuler();
+    // }
+    // long stop_time = juce::Time::currentTimeMillis();
+    // printf("1,000,000 EulerSym Duration %ld\n", stop_time - start_time);
     
     
     

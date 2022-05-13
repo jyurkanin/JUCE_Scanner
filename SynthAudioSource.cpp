@@ -1,11 +1,11 @@
 #include "SynthAudioSource.h"
 
 
-struct ScannerSound : public SynthesiserSound {
-  ScannerSound() {}
-  bool appliesToNote (int /*midiNoteNumber*/) override    { return true; }
-  bool appliesToChannel (int /*midiChannel*/) override    { return true; }
-};
+// struct ScannerSound : public SynthesiserSound {
+//   ScannerSound() {}
+//   bool appliesToNote (int /*midiNoteNumber*/) override    { return true; }
+//   bool appliesToChannel (int /*midiChannel*/) override    { return true; }
+// };
 
 SynthAudioSource::SynthAudioSource (MidiKeyboardState& keyState)  : keyboardState (keyState) {
   for (auto i = 0; i < 4; ++i) {
