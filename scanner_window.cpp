@@ -1,16 +1,8 @@
-/*
-  ==============================================================================
-    scanner_window.cpp
-    Created: 20 Feb 2021 11:26:40pm
-    Author:  justin
-  ==============================================================================
-*/
-
 #include "scanner_window.h"
-
+#include <iostream>
 
 ScannerWindow::ScannerWindow(Scanner *s) : scanner(s){
-  setFramesPerSecond(60);
+  setFramesPerSecond(30);
   setSize(800, 200);
 }
 
@@ -19,7 +11,6 @@ void ScannerWindow::update() {
 }
 
 void ScannerWindow::paint(juce::Graphics& g){
-  static float spin = 0;
   g.fillAll(juce::Colours::black);  
 
   int num_nodes = scanner->num_nodes;
@@ -29,6 +20,8 @@ void ScannerWindow::paint(juce::Graphics& g){
   
   float x_scale = getWidth() / (scanner->node_pos[0][num_nodes-1] - scanner->node_pos[0][0]);
   float y_scale = 100;
+
+  int buf_idx = scanner->buf_idx;
   
   g.setColour(juce::Colours::red);
   for(int i = 1; i < num_nodes; i++){
@@ -49,20 +42,17 @@ void ScannerWindow::paint(juce::Graphics& g){
     unsigned curr_idx = i;
     unsigned prev_idx = i-1;
     
-    start_points[i][0] = scanner->node_pos[0][curr_idx]*x_scale;
-    start_points[i][1] = scanner->node_pos[1][curr_idx]*y_scale + 100;
+    start_points[i][0] = scanner->node_pos[buf_idx+0][curr_idx]*x_scale;
+    start_points[i][1] = scanner->node_pos[buf_idx+1][curr_idx]*y_scale + 100;
     
-    end_points[i][0] = scanner->node_pos[0][prev_idx]*x_scale;
-    end_points[i][1] = scanner->node_pos[1][prev_idx]*y_scale + 100;
+    end_points[i][0] = scanner->node_pos[buf_idx+0][prev_idx]*x_scale;
+    end_points[i][1] = scanner->node_pos[buf_idx+1][prev_idx]*y_scale + 100;
     
     g.setColour(juce::Colours::blue);
     juce::Line<float> line = juce::Line<float>(start_points[i][0], start_points[i][1], end_points[i][0], end_points[i][1]);
     g.drawLine(line, 2.0f);
-    
-    //g.setColour(juce::Colours::green);
-    //line = juce::Line<float>(start_points[i][0], start_points[i][1]-5, start_points[i][0], start_points[i][1]+5);
-    //g.drawLine(line, 2.0f);
   }  
+  
   
 }
 

@@ -11,10 +11,13 @@ MainComponent::MainComponent()
     const juce::OwnedArray<juce::AudioIODeviceType>& io_devices = deviceManager.getAvailableDeviceTypes();
     juce::String dn("JACK");
     deviceManager.setCurrentAudioDeviceType(dn, true);
+
     
-//    for(int i = 0; i < io_devices.size(); i++){
-//        juce::String dn = io_devices[i]->getTypeName();
-//    }
+    // for(int i = 0; i < io_devices.size(); i++){
+    //   juce::String device_name = io_devices[i]->getTypeName();
+    //   printf("Device %s\n", device_name.toRawUTF8());
+    // }
+    printf("Connected to audio driver: %s\n", deviceManager.getCurrentAudioDeviceType().toRawUTF8());
     
     //the midi gui bullshit (mostly copy pasted from the tutorial)
     addAndMakeVisible(keyboardComponent);    
@@ -64,22 +67,16 @@ MainComponent::MainComponent()
     synth.addSound(new ScannerSound());
     synth.setNoteStealingEnabled(true);
     
-    //scanner.startTimerHz(1000);
-    
     addAndMakeVisible(scanner_window);
     
     //various sliders
-    addAndMakeVisible(hammerTableSlider);
-    hammerTableSlider.setRange(0, 101.0f, 1.0f);
-    hammerTableSlider.setTextValueSuffix(" ");
-    hammerTableSlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
-    hammerTableSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxAbove,false,60,25);
-    hammerTableSlider.setValue(0.0);
-    hammerTableSlider.addListener(this);    
-    addAndMakeVisible(hammerTableLabel);
-    hammerTableLabel.setText("Hammer", juce::dontSendNotification);
-    hammerTableLabel.attachToComponent(&hammerTableSlider, false);
+    fileChooser = std::make_unique<juce::FileChooser>("Select Waveform",
+                                                juce::File::getSpecialLocation(juce::File::userHomeDirectory),
+                                                "*.wav");
     
+    addAndMakeVisible(&openWaveformButton);
+    openWaveformButton.setButtonText("Open Waveform");
+    openWaveformButton.onClick = [this] { openWaveformButtonClicked(); };
     
     addAndMakeVisible(dampingSlider);
     dampingSlider.setRange(.001f, 1.0f, .001f);
@@ -92,7 +89,7 @@ MainComponent::MainComponent()
     addAndMakeVisible(dampingLabel);
     dampingLabel.setText("Damping", juce::dontSendNotification);
     dampingLabel.attachToComponent(&dampingSlider, false);
-
+    
 
     addAndMakeVisible(connectionSlider);
     connectionSlider.setRange(1.0f, 100.0f, .1f);
@@ -133,6 +130,15 @@ MainComponent::~MainComponent(){
     
     delete scanner_window;
     //delete scanner;
+}
+
+void MainComponent::openWaveformButtonClicked(){
+  unsigned folderChooserFlags = juce::FileBrowserComponent::openMode;
+  fileChooser->launchAsync(folderChooserFlags,
+                           [this] (const juce::FileChooser& chooser){
+                             juce::File wavFile(chooser.getResult());
+                             scanner.fillWithWaveform(wavFile.getFullPathName(), scanner.hammer_table, scanner.num_nodes);
+                           });
 }
 
 void MainComponent::setMidiInput(int index) {
@@ -192,7 +198,8 @@ void MainComponent::resized(){
   
   scanner_window->setBounds(0,0,getWidth(), scanner_window_height);
   
-  hammerTableSlider.setBounds(0,             slider_y_pos, slider_width, slider_height);
+  //hammerTableSlider.setBounds(0,             slider_y_pos, slider_width, slider_height);
+  openWaveformButton.setBounds(0,            slider_y_pos, slider_width, slider_height);
   dampingSlider.setBounds(slider_width,      slider_y_pos, slider_width, slider_height);
   connectionSlider.setBounds(slider_width*2, slider_y_pos, slider_width, slider_height);
   paramC3Slider.setBounds(slider_width*3,    slider_y_pos, slider_width, slider_height);
@@ -206,10 +213,7 @@ void MainComponent::resized(){
 }
 
 void MainComponent::sliderValueChanged(juce::Slider* slider) {
-  if(slider == &hammerTableSlider){
-    scanner.fillWithWaveform((int)hammerTableSlider.getValue(), scanner.hammer_table, scanner.num_nodes);
-  }
-  else if(slider == &dampingSlider){
+  if(slider == &dampingSlider){
     scanner.damping_gain = dampingSlider.getValue();
   }
   else if(slider == &connectionSlider){

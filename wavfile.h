@@ -29,7 +29,7 @@ typedef struct{
 
 class WavFile{
 public:
-    WavFile(char * filename);
+    WavFile(const char * filename);
     ~WavFile();
     void print();
     float *data;

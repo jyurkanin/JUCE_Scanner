@@ -24,7 +24,8 @@ public:
   void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override;
   void releaseResources() override;
   void sliderValueChanged (juce::Slider* slider) override;
-
+  void openWaveformButtonClicked();
+  
   void setMidiInput (int index);
   void timerCallback() override;
     
@@ -36,8 +37,7 @@ private:
   Scanner scanner;
   ScannerWindow *scanner_window;
   
-  juce::Slider hammerTableSlider;
-  juce::Label  hammerTableLabel;
+  juce::TextButton openWaveformButton;
   
   juce::Slider dampingSlider;
   juce::Label  dampingLabel;
@@ -48,7 +48,7 @@ private:
   juce::Slider paramC3Slider;
   juce::Label  paramC3Label;
     
-  
+  std::unique_ptr<juce::FileChooser> fileChooser;
   juce::MidiKeyboardState keyboardState;
   juce::MidiKeyboardComponent keyboardComponent;
   juce::MidiMessageCollector midiCollector;

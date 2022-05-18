@@ -16,6 +16,8 @@ struct ScannerVoice  : public juce::SynthesiserVoice {
   ScannerVoice(Scanner &s);
   ~ScannerVoice();
   
+  void enforceLipshitz(float &sample);
+  
   bool canPlaySound(juce::SynthesiserSound* sound) override;
   void startNote(int midiNoteNumber, float velocity, juce::SynthesiserSound*, int /*currentPitchWheelPosition*/) override;
   void stopNote(float /*velocity*/, bool allowTailOff) override;

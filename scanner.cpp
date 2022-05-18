@@ -17,7 +17,7 @@ Scanner::Scanner(){
   bresize_mutex = 0;
   is_block_ready = 0;
   sample_rate = 44100.0f;
-  step_size = .01;
+  step_size = .03;
   scan_idx = 0;
   scan_freq = 220;
   
@@ -50,7 +50,7 @@ Scanner::Scanner(){
   connection_gain = 1;
   distortion_c3 = .001f;
   
-  fillWithWaveform(0, hammer_table, num_nodes);
+  fillWithWaveform("/home/justin/code/JUCE/user_modules/NewProject/Source/AKWF/AKWF_0041.wav", hammer_table, num_nodes);
   
   lp_filter.setCutoff(4000.0f);
   lp_filter.setQFactor(.1f);
@@ -236,7 +236,7 @@ void Scanner::ode(float (&pos)[4][num_nodes], float (&vel)[4][num_nodes], float 
         float f_damping;
         float f_spring_prev;
         float f_spring_next;
-
+        
         float diff;
         float diff2;
         float diff3;
@@ -253,21 +253,11 @@ void Scanner::ode(float (&pos)[4][num_nodes], float (&vel)[4][num_nodes], float 
             f_damping = vel[j][i]*-damping_gain;
             
             diff = pos[j][idx_prev] - pos[j][i];
-            sum = c1*diff;
-            //diff2 = diff*diff;
-            //sum += c2*diff2;
-            //diff3 = diff2*diff;
-            //sum += -c3*tanhf(diff3);
-            
+            sum  = c1*diff;
             f_spring_prev = sum*connection_gain;
             
             diff = pos[j][idx_next] - pos[j][i];
             sum = c1*diff;
-            //diff2 = diff*diff;
-            //sum += c2*diff2;
-            //diff3 = diff2*diff;
-            //sum += -c3*tanhf(diff3);
-            
             f_spring_next = sum*connection_gain;
             
             acc[j][i] = f_damping + f_spring_prev + f_spring_next;
@@ -275,12 +265,35 @@ void Scanner::ode(float (&pos)[4][num_nodes], float (&vel)[4][num_nodes], float 
             idx_prev++;
             idx_next++;
         }
+        
+        f_damping = vel[j][0]*-damping_gain;
+        diff = pos[j][1] - pos[j][0];
+        sum = c1*diff;
+        
+        f_spring_next = sum*connection_gain;
+        acc[j][0] = f_damping + f_spring_next;
+        
+        
+        
+        f_damping = vel[j][num_nodes-1]*-damping_gain;
+        diff = pos[j][num_nodes-2] - pos[j][num_nodes-1];
+        sum = c1*diff;
+        
+        f_spring_prev = sum*connection_gain;
+        acc[j][num_nodes-1] = f_damping + f_spring_prev;
     }
     
-    acc[buf_idx][0] = 0; //make sure boundary conditions are satisfied.
-    acc[buf_idx+1][0] = 0;
-    acc[buf_idx][num_nodes-1] = 0;
-    acc[buf_idx+1][num_nodes-1] = 0;
+    // acc[buf_idx][0] = 0; //make sure boundary conditions are satisfied.
+    // acc[buf_idx+1][0] = 0;
+    // acc[buf_idx][num_nodes-1] = 0;
+    // acc[buf_idx+1][num_nodes-1] = 0;
+
+    acc[buf_idx][num_nodes-1] += acc[buf_idx][0];
+    acc[buf_idx+1][num_nodes-1] += acc[buf_idx+1][0];
+    acc[buf_idx][0] = acc[buf_idx][num_nodes-1];
+    acc[buf_idx+1][0] = acc[buf_idx+1][num_nodes-1];
+    
+    
 }
 
 
@@ -331,60 +344,49 @@ void Scanner::getSampleBlock(float **block, int len){
 }
 
 
-void Scanner::fillWithWaveform(int num, float* table, int table_len){
-  char fn[100];
-  memset(fn, 0, sizeof(fn));
-  sprintf(fn, "../../Source/AKWF/AKWF_%04d.wav", num);
-
-  
+void Scanner::fillWithWaveform(juce::String fn, float* table, int table_len){
   int scan_len = table_len;
-  int hammer_num = num;
-  if(hammer_num == 0){ //special case.
-    for(int i = 0; i < scan_len; i++){
-      table[i] = sinf(2*M_PI*i/(scan_len-1));
-    }
-  }
-  else if(hammer_num == 101){ //another special case I felt was worth including.
-    for(int i = 0; i < scan_len; i++){
-      table[i] = fabs(((scan_len-1) / 2.0) - i) / ((scan_len-1)/2);
-    }
-  }
-  else{ //load the file from AKWF.
-    WavFile wavfile(fn); //opens the wav file associated with the waveform given in the string.
-    //now you need to linearly interpolate to make the wavfile fit into the hammer table.
-    printf("scan len %d\n", wavfile.data_len);
     
-    if(scan_len == wavfile.data_len){
-      for(int i = 0; i < scan_len; i++){
-        table[i] = wavfile.data[i];
-      }
+  if(fn.length() == 0){
+    for(int i = 0; i < table_len; i++){
+      table[i] = 0;
     }
-    else if(scan_len <= wavfile.data_len){
-        for(int i = 0; i < scan_len; i++){
-            table[i] = wavfile.data[(int)(i*wavfile.data_len/(float)scan_len)];
-        }
-    }
-    else if(scan_len > wavfile.data_len){ //need to linearly interpolate.
-      float index;
-      int l_index; //lower
-      int u_index; //upper
-      for(int i = 0; i < scan_len; i++){
-        index = (i*wavfile.data_len/(float)scan_len);
-        l_index = (int) index;
-        u_index = l_index+1;
-        if(u_index < wavfile.data_len)
-          table[i] = ((index-l_index)*wavfile.data[u_index] + (u_index-index)*wavfile.data[l_index]); //linear interpolation
-        else //edge case
-          table[i] = ((index-l_index)*wavfile.data[wavfile.data_len] + (u_index-index)*wavfile.data[l_index]); 
-      }            
+    return;
+  }
+  
+  
+  WavFile wavfile(fn.toRawUTF8());
+  //now you need to linearly interpolate to make the wavfile fit into the hammer table.
+  
+  if(scan_len == wavfile.data_len){
+    for(int i = 0; i < scan_len; i++){
+      table[i] = wavfile.data[i];
     }
   }
-
+  else if(scan_len <= wavfile.data_len){
+    for(int i = 0; i < scan_len; i++){
+      table[i] = wavfile.data[(int)(i*wavfile.data_len/(float)scan_len)];
+    }
+  }
+  else if(scan_len > wavfile.data_len){ //need to linearly interpolate.
+    float index;
+    int l_index; //lower
+    int u_index; //upper
+    for(int i = 0; i < scan_len; i++){
+      index = (i*wavfile.data_len/(float)scan_len);
+      l_index = (int) index;
+      u_index = l_index+1;
+      if(u_index < wavfile.data_len)
+        table[i] = ((index-l_index)*wavfile.data[u_index] + (u_index-index)*wavfile.data[l_index]); //linear interpolation
+      else //edge case
+        table[i] = ((index-l_index)*wavfile.data[wavfile.data_len] + (u_index-index)*wavfile.data[l_index]); 
+    }            
+  }
+  
   for(int i = 1; i < scan_len; i++){
-      table[i] -= table[0];
+    table[i] -= table[0];
   }
   table[0] -= table[0];
-  
   table[scan_len-1] = table[0];
 }
 

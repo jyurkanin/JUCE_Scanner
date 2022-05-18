@@ -1,7 +1,7 @@
 #include "wavfile.h"
 
-#define PARSE_VAR(X) if(read(fd, &X, sizeof(X)) != sizeof(X)) printf("error1\n")
-WavFile::WavFile(char * filename){
+
+WavFile::WavFile(const char * filename){
     int fd = open(filename, O_RDONLY);
     if(read(fd, &header, sizeof(header)) != sizeof(header)) printf("error2\n");
     //print();

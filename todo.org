@@ -4,7 +4,7 @@
 * Bruh
   75 and 79 sounded fucking nuts.
 
-* TODO DEbug click
+* DONE DEbug click
   Clicks when changing notes.
   I verified the envelope is continuous no matter what, so thats not the problem.
   Idk wtf the problem is.
@@ -36,6 +36,17 @@
   
   What do? Think about the atomic operations and see if there could be some access pattern
   that causes problems.
+  
+** Update: Only hearing a click when changing notes. It's a pitch related problem I guess.
+   
+   It was just buffer underrun.
+   Not. There is another.
+
+** Click after every note with the sequencer. wtf.
+   Something is happening with note off.
+
+
+* TODO Figure out how to remove x axis interpolation
 
 * DONE Investigate First Order Symplectic Integrator
   Like euler's method but slightly different.
@@ -66,12 +77,15 @@
 * TODO Portamento
   Mono legato mode still.
 
-* TODO Add some kind of fun nonlinearity
+* DONE Add some kind of fun nonlinearity
   Hmm even and odd distortion.
   stiffness = (x^3 - x)
   Result is chaotic and cool
+  Just learned what passivity means.
+  No, I dont think we will add a nonlinearity right now. :)
 
-* TODO Menu for selecting a wavefile instead of a fucking slider
+* DONE Menu for selecting a wavefile instead of a fucking slider
+  
 
 * DONE Explore Wavetable Interpolation
   Tried sinc interpolation, but didn't hear any improvements.

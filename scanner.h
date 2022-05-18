@@ -1,7 +1,7 @@
 #include <vector>
 #include <math.h>
 
-#include <cstring>
+#include <string>
 #include <cstdio>
 #include <fstream>
 #include <eigen3/Eigen/Dense>
@@ -81,7 +81,7 @@ public:
     void setBlockSize(int bs);
     void setSampleRate(float sr);
     void getSampleBlock(float **block, int len);
-    void fillWithWaveform(int wave_num, float* table, int table_len);
+    void fillWithWaveform(juce::String fn, float* table, int table_len);
     
     float compressAudio(float in, float attack, float threshold, float ratio, int channel);
     void ode(float (&pos)[4][num_nodes], float (&vel)[4][num_nodes], float (&acc)[4][num_nodes]);
