@@ -84,37 +84,35 @@ void ScannerVoice::pitchWheelMoved (int /*newValue*/) {}
 void ScannerVoice::controllerMoved (int /*controllerNumber*/, int /*newValue*/) {}
 
 void ScannerVoice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int startSample, int numSamples) {
-  if(!adsr.isActive()){
-    for(int ii = startSample; ii < numSamples; ii++){
-      LOGFILE::log_value(0.0f);
-      for(int channel = 0; channel < outputBuffer.getNumChannels(); channel++){
-        outputBuffer.addSample(channel, ii, 0);
-      }
-    }
-    return;
-  }  
-
-  float sample = 0;
-  for(int ii = startSample; ii < numSamples; ii++){
-    float gain = adsr.getNextSample();
-    sample = sinf(M_PI*2*scan_idx);
-    sample *= gain;
     
-    for(auto channel = 0; channel < outputBuffer.getNumChannels(); channel++){
-      outputBuffer.addSample(channel, ii, sample);
+    if(!adsr.isActive()){
+        return; //No need to zero buffer. Its already cleared.
     }
-
-    //scan_idx = fmod(scan_idx + (delta_scan_idx/max_scan_len), 1);
-    scan_idx += delta_scan_idx/max_scan_len;
-    LOGFILE::log_value(sample);
-  }
     
-  if(!adsr.isActive()){ //adsr has deactivated. (finished release phase)
-    clearCurrentNote();
-    //t_ = 0; //this ensures that the wavetable will be updated.
-    scan_idx = 0.0f;
-    delta_scan_idx = 0.0f;
-  }
+    
+    float sample = 0;
+    for(int ii = startSample; ii < (startSample+numSamples); ii++){
+        float gain = adsr.getNextSample();
+        sample = sinf(M_PI*2*scan_idx);
+        sample *= gain;
+        
+        for(auto channel = 0; channel < outputBuffer.getNumChannels(); channel++){
+            outputBuffer.addSample(channel, ii, sample);
+        }
+        
+        scan_idx = fmod(scan_idx + (delta_scan_idx/max_scan_len), 1);
+        //scan_idx += delta_scan_idx/max_scan_len;
+        LOGFILE::log_value(sample);
+    }
+    
+    
+    if(!adsr.isActive()){ //adsr has deactivated. (finished release phase)
+        clearCurrentNote();
+        //t_ = 0; //this ensures that the wavetable will be updated.
+        scan_idx = 0.0f;
+        delta_scan_idx = 0.0f;
+    }
+    
 }
 
 

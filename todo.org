@@ -44,7 +44,7 @@
 
 ** Click after every note with the sequencer. wtf.
    Something is happening with note off.
-
+   I wasnt assigning the entire audio buffer. Massive amounts of dropout were happening.
 
 * TODO Figure out how to remove x axis interpolation
 
@@ -76,6 +76,7 @@
   
 * TODO Portamento
   Mono legato mode still.
+  
 
 * DONE Add some kind of fun nonlinearity
   Hmm even and odd distortion.

@@ -50,7 +50,7 @@ Scanner::Scanner(){
   connection_gain = 1;
   distortion_c3 = .001f;
   
-  fillWithWaveform("/home/justin/code/JUCE/user_modules/NewProject/Source/AKWF/AKWF_0041.wav", hammer_table, num_nodes);
+  fillWithWaveform("/home/justin/code/JUCE_Scanner/NewProject/Source/AKWF/AKWF_0041.wav", hammer_table, num_nodes);
   
   lp_filter.setCutoff(4000.0f);
   lp_filter.setQFactor(.1f);
