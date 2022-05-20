@@ -5,5 +5,6 @@ import matplotlib.pyplot as plt
 
 
 df = pd.read_csv("/home/justin/juce_log.csv")
-plt.plot(df['value'])
+temp = df['value'].to_numpy()
+plt.plot(temp[0:100])
 plt.show()

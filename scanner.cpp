@@ -48,7 +48,8 @@ Scanner::Scanner(){
   
   damping_gain = 0; //lol this has to positive. Or system will go unstable. Duh.
   connection_gain = 1;
-  distortion_c3 = .001f;
+  portamento_tc = 0.0f;
+  retrigger = 1;
   
   fillWithWaveform("/home/justin/code/JUCE_Scanner/NewProject/Source/AKWF/AKWF_0041.wav", hammer_table, num_nodes);
   
@@ -238,14 +239,6 @@ void Scanner::ode(float (&pos)[4][num_nodes], float (&vel)[4][num_nodes], float 
         float f_spring_next;
         
         float diff;
-        float diff2;
-        float diff3;
-        
-        float c1 = 1;
-        float c2 = 0;
-        float c3 = distortion_c3;
-        
-        float sum;
         
         int idx_prev = 0;
         int idx_next = 2;
@@ -253,12 +246,10 @@ void Scanner::ode(float (&pos)[4][num_nodes], float (&vel)[4][num_nodes], float 
             f_damping = vel[j][i]*-damping_gain;
             
             diff = pos[j][idx_prev] - pos[j][i];
-            sum  = c1*diff;
-            f_spring_prev = sum*connection_gain;
+            f_spring_prev = diff*connection_gain;
             
             diff = pos[j][idx_next] - pos[j][i];
-            sum = c1*diff;
-            f_spring_next = sum*connection_gain;
+            f_spring_next = diff*connection_gain;
             
             acc[j][i] = f_damping + f_spring_prev + f_spring_next;
             
@@ -268,18 +259,16 @@ void Scanner::ode(float (&pos)[4][num_nodes], float (&vel)[4][num_nodes], float 
         
         f_damping = vel[j][0]*-damping_gain;
         diff = pos[j][1] - pos[j][0];
-        sum = c1*diff;
         
-        f_spring_next = sum*connection_gain;
+        f_spring_next = diff*connection_gain;
         acc[j][0] = f_damping + f_spring_next;
         
         
         
         f_damping = vel[j][num_nodes-1]*-damping_gain;
         diff = pos[j][num_nodes-2] - pos[j][num_nodes-1];
-        sum = c1*diff;
         
-        f_spring_prev = sum*connection_gain;
+        f_spring_prev = diff*connection_gain;
         acc[j][num_nodes-1] = f_damping + f_spring_prev;
     }
     

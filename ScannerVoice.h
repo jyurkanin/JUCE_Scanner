@@ -38,7 +38,6 @@ private:
 
     Scanner &scanner_osc;
     float scan_idx = 0.0;
-    float delta_scan_idx = 0.0;
     float max_scan_len = 0.0;
     float cycles_per_second = 0.0f;
     
@@ -47,5 +46,7 @@ private:
     float level = 0.0;
     float tailOff = 0.0;
     
+    float delta_scan_idx_target = 0;
+    float delta_scan_idx_current = 0;
     juce::ADSR adsr;
 };

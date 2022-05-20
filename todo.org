@@ -4,6 +4,7 @@
 * Bruh
   75 and 79 sounded fucking nuts.
 
+* TODO Create VST3 plugin.
 * DONE DEbug click
   Clicks when changing notes.
   I verified the envelope is continuous no matter what, so thats not the problem.
@@ -74,10 +75,10 @@
   Mostly for personal use. I dont think this will have a use as plugin. 
   Mostly done. Juce made it easy.
   
-* TODO Portamento
+* DONE Portamento
   Mono legato mode still.
   
-
+* DONE Add retrigger button
 * DONE Add some kind of fun nonlinearity
   Hmm even and odd distortion.
   stiffness = (x^3 - x)

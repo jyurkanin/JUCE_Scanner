@@ -11,7 +11,7 @@ MainComponent::MainComponent()
     const juce::OwnedArray<juce::AudioIODeviceType>& io_devices = deviceManager.getAvailableDeviceTypes();
     juce::String dn("JACK");
     deviceManager.setCurrentAudioDeviceType(dn, true);
-
+    
     
     // for(int i = 0; i < io_devices.size(); i++){
     //   juce::String device_name = io_devices[i]->getTypeName();
@@ -32,7 +32,7 @@ MainComponent::MainComponent()
     juce::StringArray midiInputNames;
     for(auto input : midiInputs)
         midiInputNames.add(input.name);
- 
+    
     midiInputList.addItemList(midiInputNames, 1);
     midiInputList.onChange = [this] { setMidiInput (midiInputList.getSelectedItemIndex()); };
     
@@ -78,8 +78,12 @@ MainComponent::MainComponent()
     openWaveformButton.setButtonText("Open Waveform");
     openWaveformButton.onClick = [this] { openWaveformButtonClicked(); };
     
+    addAndMakeVisible(&retriggerButton);
+    retriggerButton.setButtonText("Retrigger");
+    retriggerButton.onClick = [this] { retriggerButtonClicked(); };
+    
     addAndMakeVisible(dampingSlider);
-    dampingSlider.setRange(.001f, 1.0f, .001f);
+    dampingSlider.setRange(0.0f, 1.0f, .001f);
     dampingSlider.setSkewFactorFromMidPoint(.1f);
     dampingSlider.setTextValueSuffix(" ");
     dampingSlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
@@ -103,16 +107,16 @@ MainComponent::MainComponent()
     connectionLabel.attachToComponent(&connectionSlider, false);
         
 
-    addAndMakeVisible(paramC3Slider);
-    paramC3Slider.setRange(0.0f, 100.0f, .01f);
-    paramC3Slider.setTextValueSuffix("");
-    paramC3Slider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
-    paramC3Slider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxAbove,false,60,25);
-    paramC3Slider.setValue(0.001f);
-    paramC3Slider.addListener(this);
-    addAndMakeVisible(paramC3Label);
-    paramC3Label.setText("C3", juce::dontSendNotification);
-    paramC3Label.attachToComponent(&paramC3Slider, false);
+    addAndMakeVisible(portamentoSlider);
+    portamentoSlider.setRange(0.0f, 1.0f, .001f);
+    portamentoSlider.setTextValueSuffix("");
+    portamentoSlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
+    portamentoSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxAbove,false,60,25);
+    portamentoSlider.setValue(0.001f);
+    portamentoSlider.addListener(this);
+    addAndMakeVisible(portamentoLabel);
+    portamentoLabel.setText("Glide", juce::dontSendNotification);
+    portamentoLabel.attachToComponent(&portamentoSlider, false);
 
 
     
@@ -137,8 +141,15 @@ void MainComponent::openWaveformButtonClicked(){
   fileChooser->launchAsync(folderChooserFlags,
                            [this] (const juce::FileChooser& chooser){
                              juce::File wavFile(chooser.getResult());
+                             if(wavFile.getFullPathName().length() == 0){
+                                 return;
+                             }
                              scanner.fillWithWaveform(wavFile.getFullPathName(), scanner.hammer_table, scanner.num_nodes);
                            });
+}
+
+void MainComponent::retriggerButtonClicked(){
+    scanner.retrigger ^= 1;
 }
 
 void MainComponent::setMidiInput(int index) {
@@ -174,8 +185,8 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
   bufferToFill.clearActiveBufferRegion();
 
   juce::MidiBuffer incomingMidi;
-  midiCollector.removeNextBlockOfMessages (incomingMidi, bufferToFill.numSamples);
-  keyboardState.processNextMidiBuffer (incomingMidi, 0, bufferToFill.numSamples, true);
+  midiCollector.removeNextBlockOfMessages(incomingMidi, bufferToFill.numSamples);
+  keyboardState.processNextMidiBuffer(incomingMidi, 0, bufferToFill.numSamples, true);
   
   synth.renderNextBlock(*bufferToFill.buffer, incomingMidi, bufferToFill.startSample, bufferToFill.numSamples);
   bufferToFill.buffer->applyGain(1.0f);
@@ -186,23 +197,26 @@ void MainComponent::releaseResources() {
 }
 
 
-void MainComponent::paint (juce::Graphics& g) {
+void MainComponent::paint(juce::Graphics& g) {
   
 }
 
 void MainComponent::resized(){
   int scanner_window_height = 200;
-  int slider_width = 60;
+  int button_width = 80;
+  int slider_width = 50;
   int slider_height = 100;
   int slider_y_pos = 50 + scanner_window_height;
   
   scanner_window->setBounds(0,0,getWidth(), scanner_window_height);
   
   //hammerTableSlider.setBounds(0,             slider_y_pos, slider_width, slider_height);
-  openWaveformButton.setBounds(0,            slider_y_pos, slider_width, slider_height);
-  dampingSlider.setBounds(slider_width,      slider_y_pos, slider_width, slider_height);
-  connectionSlider.setBounds(slider_width*2, slider_y_pos, slider_width, slider_height);
-  paramC3Slider.setBounds(slider_width*3,    slider_y_pos, slider_width, slider_height);
+  openWaveformButton.setBounds(0,            slider_y_pos, button_width, slider_height/2);
+  retriggerButton.setBounds(0,               slider_y_pos + (slider_height/2), button_width, slider_height/2);
+    
+  dampingSlider.setBounds(button_width,      slider_y_pos, slider_width, slider_height);
+  connectionSlider.setBounds(button_width + slider_width, slider_y_pos, slider_width, slider_height);
+  portamentoSlider.setBounds(button_width + slider_width*2, slider_y_pos, slider_width, slider_height);
   
   int keyboard_y_pos = slider_y_pos + slider_height + 50;
   int keyboard_height = 200;
@@ -213,14 +227,14 @@ void MainComponent::resized(){
 }
 
 void MainComponent::sliderValueChanged(juce::Slider* slider) {
-  if(slider == &dampingSlider){
-    scanner.damping_gain = dampingSlider.getValue();
-  }
-  else if(slider == &connectionSlider){
-    scanner.connection_gain = connectionSlider.getValue();
-  }
-  else if(slider == &paramC3Slider){
-    scanner.distortion_c3 = paramC3Slider.getValue();
-  }
-
+    if(slider == &dampingSlider){
+        scanner.damping_gain = dampingSlider.getValue();
+    }
+    else if(slider == &connectionSlider){
+        scanner.connection_gain = connectionSlider.getValue();
+    }
+    else if(slider == &portamentoSlider){
+        scanner.portamento_tc = portamentoSlider.getValue();
+    }
+    
 }

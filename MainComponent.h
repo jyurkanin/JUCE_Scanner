@@ -25,6 +25,7 @@ public:
   void releaseResources() override;
   void sliderValueChanged (juce::Slider* slider) override;
   void openWaveformButtonClicked();
+  void retriggerButtonClicked();
   
   void setMidiInput (int index);
   void timerCallback() override;
@@ -38,6 +39,7 @@ private:
   ScannerWindow *scanner_window;
   
   juce::TextButton openWaveformButton;
+  juce::TextButton retriggerButton;
   
   juce::Slider dampingSlider;
   juce::Label  dampingLabel;
@@ -45,8 +47,8 @@ private:
   juce::Slider connectionSlider;
   juce::Label  connectionLabel;
 
-  juce::Slider paramC3Slider;
-  juce::Label  paramC3Label;
+  juce::Slider portamentoSlider;
+  juce::Label  portamentoLabel;
     
   std::unique_ptr<juce::FileChooser> fileChooser;
   juce::MidiKeyboardState keyboardState;

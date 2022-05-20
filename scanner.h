@@ -55,12 +55,12 @@ public:
     float sample_rate;
     int bsize;
     int bresize_mutex;
-
-    float distortion_c3;
     
     juce::CriticalSection mutex_scan_table_;
     LPFilter lp_filter;
-    
+
+    float portamento_tc;
+    int retrigger;
     
     Scanner();
     ~Scanner();
