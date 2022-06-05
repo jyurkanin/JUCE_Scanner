@@ -5,6 +5,7 @@
   75 and 79 sounded fucking nuts.
 
 * TODO Create VST3 plugin.
+  Need to read up on this.
 * DONE DEbug click
   Clicks when changing notes.
   I verified the envelope is continuous no matter what, so thats not the problem.
@@ -70,7 +71,10 @@
   
 * TODO Add 3D fairlight visualization
   cool receding 3d wave thing (opengl)
-  
+  Oh boy
+
+* DONE Waveform 98 was giving a click
+  Only happened once. DIdnt happen when I reloaded it.
 * DONE Respond to midi
   Mostly for personal use. I dont think this will have a use as plugin. 
   Mostly done. Juce made it easy.

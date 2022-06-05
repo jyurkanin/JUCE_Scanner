@@ -22,7 +22,7 @@ using namespace Eigen;
 
 
 
-class ScannerWindow   : public juce::AnimatedAppComponent{
+class ScannerWindow : public juce::AnimatedAppComponent{
 public:
   ScannerWindow(Scanner *s);
   void update() override;

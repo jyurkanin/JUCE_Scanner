@@ -122,8 +122,8 @@ MainComponent::MainComponent()
     
     // Make sure you set the size of the component after
     // you add any child components
-    setSize (800, 600);
-    setAudioChannels (0, 2);
+    setSize(800, 600);
+    setAudioChannels(0, 2);
 
     startTimer(400); //this callback fires fter 400ms and only runs once.
 }
@@ -140,11 +140,11 @@ void MainComponent::openWaveformButtonClicked(){
   unsigned folderChooserFlags = juce::FileBrowserComponent::openMode;
   fileChooser->launchAsync(folderChooserFlags,
                            [this] (const juce::FileChooser& chooser){
-                             juce::File wavFile(chooser.getResult());
-                             if(wavFile.getFullPathName().length() == 0){
-                                 return;
-                             }
-                             scanner.fillWithWaveform(wavFile.getFullPathName(), scanner.hammer_table, scanner.num_nodes);
+                               juce::File wavFile(chooser.getResult());
+                               if(wavFile.getFullPathName().length() == 0){
+                                   return;
+                               }
+                               scanner.fillWithWaveform(wavFile.getFullPathName(), scanner.hammer_table, scanner.num_nodes);
                            });
 }
 
@@ -223,7 +223,9 @@ void MainComponent::resized(){
   int keyboard_width = 200;
   
   midiInputList.setBounds(10, keyboard_y_pos - 30, keyboard_width, 20);
-  keyboardComponent.setBounds(10,  keyboard_y_pos, keyboard_width, keyboard_height);  
+  keyboardComponent.setBounds(10,  keyboard_y_pos, keyboard_width, keyboard_height);
+  
+  
 }
 
 void MainComponent::sliderValueChanged(juce::Slider* slider) {
