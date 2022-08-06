@@ -51,7 +51,7 @@ Scanner::Scanner(){
   portamento_tc = 0.0f;
   retrigger = 1;
   
-  fillWithWaveform("/home/justin/code/JUCE_Scanner/NewProject/Source/AKWF/AKWF_0041.wav", hammer_table, num_nodes);
+  fillWithWaveform("", hammer_table, num_nodes);
   
   lp_filter.setCutoff(4000.0f);
   lp_filter.setQFactor(.1f);

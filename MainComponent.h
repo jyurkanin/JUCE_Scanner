@@ -38,8 +38,8 @@ private:
     juce::Synthesiser synth;
     Scanner scanner;
     ScannerWindow *scanner_window;
-    WaveTerrainWindow *terrain_window;
-    
+    std::unique_ptr<WaveTerrainWindow> terrain_window;
+  
     juce::TextButton openWaveformButton;
     juce::TextButton retriggerButton;
     

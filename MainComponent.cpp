@@ -5,9 +5,7 @@
 
 
 MainComponent::MainComponent()
-    :  keyboardComponent(keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard)
-{
-    
+    :  keyboardComponent(keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard) {
     const juce::OwnedArray<juce::AudioIODeviceType>& io_devices = deviceManager.getAvailableDeviceTypes();
     juce::String dn("JACK");
     deviceManager.setCurrentAudioDeviceType(dn, true);
@@ -94,7 +92,7 @@ MainComponent::MainComponent()
     dampingLabel.setText("Damping", juce::dontSendNotification);
     dampingLabel.attachToComponent(&dampingSlider, false);
     
-
+    
     addAndMakeVisible(connectionSlider);
     connectionSlider.setRange(1.0f, 100.0f, .1f);
     connectionSlider.setTextValueSuffix("");
@@ -106,7 +104,7 @@ MainComponent::MainComponent()
     connectionLabel.setText("Edge", juce::dontSendNotification);
     connectionLabel.attachToComponent(&connectionSlider, false);
         
-
+    
     addAndMakeVisible(portamentoSlider);
     portamentoSlider.setRange(0.0f, 1.0f, .001f);
     portamentoSlider.setTextValueSuffix("");
@@ -117,14 +115,15 @@ MainComponent::MainComponent()
     addAndMakeVisible(portamentoLabel);
     portamentoLabel.setText("Glide", juce::dontSendNotification);
     portamentoLabel.attachToComponent(&portamentoSlider, false);
-
-
     
-    // Make sure you set the size of the component after
-    // you add any child components
+    terrain_window.reset(new WaveTerrainWindow());
+    addAndMakeVisible(terrain_window.get());
+    
+    //Make sure you set the size of the component after
+    //you add any child components
     setSize(800, 600);
     setAudioChannels(0, 2);
-
+    
     startTimer(400); //this callback fires fter 400ms and only runs once.
 }
 
@@ -225,7 +224,7 @@ void MainComponent::resized(){
   midiInputList.setBounds(10, keyboard_y_pos - 30, keyboard_width, 20);
   keyboardComponent.setBounds(10,  keyboard_y_pos, keyboard_width, keyboard_height);
   
-  
+  terrain_window->setBounds(300,200, 500,400);
 }
 
 void MainComponent::sliderValueChanged(juce::Slider* slider) {
