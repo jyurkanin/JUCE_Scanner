@@ -1,6 +1,8 @@
 #include <JuceHeader.h>
 
 
+
+
 class WaveTerrainWindow : public juce::OpenGLAppComponent{
 public:
     WaveTerrainWindow();
@@ -10,6 +12,7 @@ public:
     void render() override;
     void shutdown() override;
     
+    void paint(juce::Graphics& g) override;
     
 private:
     juce::Matrix3D<float> getProjectionMatrix() const;
