@@ -28,7 +28,7 @@ WaveTerrainWindow::~WaveTerrainWindow(){
 void WaveTerrainWindow::initialise(){
   //printf("initialise current time %lld\n", juce::Time::getCurrentTime().toMilliseconds());
     bool result;
-    bool is_good = false;
+    bool is_good = true;
     
     juce::File cwd = juce::File::getCurrentWorkingDirectory();
     juce::String cwd_string = cwd.getParentDirectory().getParentDirectory().getFullPathName() + juce::String("/Source/shaders/");
@@ -37,21 +37,21 @@ void WaveTerrainWindow::initialise(){
     
     shader.reset(new juce::OpenGLShaderProgram(openGLContext));
     result = shader->addVertexShader(juce::File(cwd_string + juce::String("wave_shader.vert")).loadFileAsString());
-    is_good |= result;
+    is_good &= result;
     if(!result){
         juce::String err = shader->getLastError();
         printf("Vertex Shader Error %s\n", err.toRawUTF8());
     }
     
     result = shader->addFragmentShader(juce::File(cwd_string + juce::String("wave_shader.frag")).loadFileAsString());
-    is_good |= result;
+    is_good &= result;
     if(!result){
         juce::String err = shader->getLastError();
         printf("Vertex Shader Error %s\n", err.toRawUTF8());
     }
     
     result = shader->link();
-    is_good |= result;
+    is_good &= result;
     if(!result){
         juce::String err = shader->getLastError();
         printf("Vertex Shader Error %s\n", err.toRawUTF8());
@@ -135,7 +135,7 @@ void WaveTerrainWindow::render(){
   }  
   
   
-  shader->setUniform("ourColor", 0,0,1,1); //rgba
+  //shader->setUniform("ourColor", 0,0,1,1); //rgba
   
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, num_coords*sizeof(float), vertices, GL_STATIC_DRAW);
