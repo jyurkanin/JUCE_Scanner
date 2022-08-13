@@ -11,22 +11,22 @@ WaveTerrainWindow::WaveTerrainWindow(){
     //Test.
     num_waves = max_waves;
     for(int i = 0; i < num_waves; i++){
-      int offset = i*points_per_wave;
-      for(int j = 0; j < points_per_wave; j++){
-        int v_offset = 3*(offset+j);
-        vertices[v_offset+0] = j;
-        vertices[v_offset+1] = sinf(M_PI*j/(points_per_wave-1));
-        vertices[v_offset+2] = -1-i;
-      }
+        int offset = i*points_per_wave;
+        for(int j = 0; j < points_per_wave; j++){
+            int v_offset = 3*(offset+j);
+            vertices[v_offset+0] = j;
+            vertices[v_offset+1] = sinf(M_PI*j/(points_per_wave-1));
+            vertices[v_offset+2] = -1-i;
+        }
     }
 }
 
 WaveTerrainWindow::~WaveTerrainWindow(){
-  shutdownOpenGL();
+    shutdownOpenGL();
 }
 
 void WaveTerrainWindow::initialise(){
-  //printf("initialise current time %lld\n", juce::Time::getCurrentTime().toMilliseconds());
+    //printf("initialise current time %lld\n", juce::Time::getCurrentTime().toMilliseconds());
     bool result;
     bool is_good = true;
     
@@ -92,61 +92,61 @@ void WaveTerrainWindow::initialise(){
     shader->setUniformMat4("viewMatrix", viewMatrix.mat, 1, false);
 }
 
-void WaveTerrainWindow::render(){
-  //printf("render current time %lld\n", juce::Time::getCurrentTime().toMilliseconds());
-  if(juce::OpenGLHelpers::isContextActive()){
-    //printf("juce context is active\n");
-  }
-  else{
-    //printf("juce context is not active\n");
-    return;
-  }
-  
-  
-  float desktopScale = openGLContext.getRenderingScale();
-  juce::OpenGLHelpers::clear(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
-  
-  glViewport(0, 0,
-             juce::roundToInt(desktopScale * (float) getWidth()),
-             juce::roundToInt(desktopScale * (float) getHeight()));
-
-  unsigned int num_coords = 3*num_waves*points_per_wave; //number of vertices times 3
-  unsigned int num_triangles = (points_per_wave-1)*(num_waves-1)*2;
-  unsigned int num_indices = num_triangles*3;
-  unsigned int indices[num_indices]; //reserve the largest chunk of memory that we might use.
-  
-  int cnt = 0;
-  for(unsigned int i = 0; i < num_waves-1; i++){
-    for(unsigned int j = 0; j < points_per_wave-1; j++){
-      //we are iterating per square in the mesh.
-      //each square has two triangles. Add them to the EBO.
-      //bottom right triangle
-      indices[cnt+0] = (i*points_per_wave) + j;
-      indices[cnt+1] = (i*points_per_wave) + j + 1;
-      indices[cnt+2] = ((i+1)*points_per_wave) + j + 1;
-      cnt += 3;
-
-      //upper left diagonal
-      indices[cnt+0] = (i*points_per_wave) + j;
-      indices[cnt+1] = ((i+1)*points_per_wave) + j;
-      indices[cnt+2] = ((i+1)*points_per_wave) + j + 1;
-      cnt += 3;
+void WaveTerrainWindow::render2(){
+    //printf("render current time %lld\n", juce::Time::getCurrentTime().toMilliseconds());
+    if(juce::OpenGLHelpers::isContextActive()){
+        //printf("juce context is active\n");
     }
-  }  
+    else{
+        //printf("juce context is not active\n");
+        return;
+    }
+    
+    
+    float desktopScale = openGLContext.getRenderingScale();
+    juce::OpenGLHelpers::clear(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
+    
+    glViewport(0, 0,
+               juce::roundToInt(desktopScale * (float) getWidth()),
+               juce::roundToInt(desktopScale * (float) getHeight()));
+    
+    unsigned int num_coords = 3*num_waves*points_per_wave; //number of vertices times 3
+    unsigned int num_triangles = (points_per_wave-1)*(num_waves-1)*2;
+    unsigned int num_indices = num_triangles*3;
+    unsigned int indices[num_indices]; //reserve the largest chunk of memory that we might use.
+  
+    int cnt = 0;
+    for(unsigned int i = 0; i < num_waves-1; i++){
+        for(unsigned int j = 0; j < points_per_wave-1; j++){
+            //we are iterating per square in the mesh.
+            //each square has two triangles. Add them to the EBO.
+            //bottom right triangle
+            indices[cnt+0] = (i*points_per_wave) + j;
+            indices[cnt+1] = (i*points_per_wave) + j + 1;
+            indices[cnt+2] = ((i+1)*points_per_wave) + j + 1;
+            cnt += 3;
+
+            //upper left diagonal
+            indices[cnt+0] = (i*points_per_wave) + j;
+            indices[cnt+1] = ((i+1)*points_per_wave) + j;
+            indices[cnt+2] = ((i+1)*points_per_wave) + j + 1;
+            cnt += 3;
+        }
+    }  
   
   
-  //shader->setUniform("ourColor", 0,0,1,1); //rgba
+    //shader->setUniform("ourColor", 0,0,1,1); //rgba
   
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, num_coords*sizeof(float), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, num_coords*sizeof(float), vertices, GL_STATIC_DRAW);
   
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices*sizeof(float), indices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices*sizeof(float), indices, GL_STATIC_DRAW);
   
-  glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, nullptr);
   
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void WaveTerrainWindow::shutdown(){
