@@ -11,4 +11,5 @@ uniform mat4 viewMatrix;
 void main() {
     //vColor = aColor; // set ourColor to the input color we got from the vertex data
     gl_Position = projectionMatrix * viewMatrix * vec4(aPos, 1.0);
+    //gl_Position = vec4(aPos, 1.0);
 }
