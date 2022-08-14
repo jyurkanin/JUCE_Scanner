@@ -14,15 +14,11 @@ WaveTerrainWindow::WaveTerrainWindow(){
     for(int i = 0; i < num_waves; i++){
         int offset = i*points_per_wave;
         for(int j = 0; j < points_per_wave; j++){
-            float inc = (2*j) + i;
-            int v_offset = 6*(offset+j);
+            float inc = (2*j) + 2*i;
+            int v_offset = 3*(offset+j);
             vertices[v_offset+0] = -.5f + ((float)j/(points_per_wave-1));
             vertices[v_offset+1] = .25f*sinf(M_PI*inc/(points_per_wave-1));
             vertices[v_offset+2] = -i;
-
-            vertices[v_offset+3] = 1;
-            vertices[v_offset+4] = (float)i/(num_waves-1);
-            vertices[v_offset+5] = 0;
         }
     }
     
@@ -110,7 +106,7 @@ void WaveTerrainWindow::render(){
     shader->setUniformMat4("projectionMatrix", projectionMatrix.mat, 1, false);
     shader->setUniformMat4("viewMatrix", viewMatrix.mat, 1, false);
     
-    unsigned int num_coords = 6*num_waves*points_per_wave; //number of vertices times 3
+    unsigned int num_coords = 3*num_waves*points_per_wave; //number of vertices times 3
     unsigned int num_triangles = (points_per_wave-1)*(num_waves-1)*2;
     unsigned int num_indices = num_triangles*3;
     unsigned int indices[num_indices]; //reserve the largest chunk of memory that we might use.
@@ -143,8 +139,7 @@ void WaveTerrainWindow::render(){
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, num_coords*sizeof(float), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(gl_pos_idx, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
-    glVertexAttribPointer(gl_color_idx, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(gl_pos_idx, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
     
     
     glGenBuffers(1, &EBO);
@@ -153,10 +148,8 @@ void WaveTerrainWindow::render(){
     
     
     glEnableVertexAttribArray(gl_pos_idx);
-    glEnableVertexAttribArray(gl_color_idx);
     glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, nullptr);
     glDisableVertexAttribArray(gl_pos_idx);
-    glDisableVertexAttribArray(gl_color_idx);
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -180,7 +173,7 @@ juce::Matrix3D<float> WaveTerrainWindow::getProjectionMatrix() const {
 juce::Matrix3D<float> WaveTerrainWindow::getViewMatrix() const {
     juce::Matrix3D<float> viewMatrix ({0.0f, -.2f, -near_plane_dist});
     juce::Matrix3D<float> rotationMatrix = viewMatrix.rotation({
-            .001,
+            .05,
             0, //.01*getFrameCounter(),
             0.0f});
     return rotationMatrix * viewMatrix;

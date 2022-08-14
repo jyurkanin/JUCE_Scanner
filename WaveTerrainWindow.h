@@ -27,7 +27,7 @@ private:
     
     
     static constexpr int gl_pos_idx = 0;
-    static constexpr int gl_color_idx = 1;
+  //static constexpr int gl_color_idx = 1;
     static constexpr unsigned int points_per_wave = 100;
     static constexpr unsigned int max_waves = 100;
     static constexpr unsigned int max_vertices = points_per_wave*max_waves;
@@ -36,7 +36,7 @@ private:
     unsigned int VBO;
     unsigned int EBO;
     //position and colors
-    float vertices[max_vertices*6];
+    float vertices[max_vertices*3];
     unsigned int num_waves;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WaveTerrainWindow)
