@@ -13,6 +13,8 @@ public:
     void shutdown() override;
     
     void paint(juce::Graphics& g) override;
+
+    float near_plane_dist = 7.0f;
     
 private:
     juce::Matrix3D<float> getProjectionMatrix() const;
@@ -26,13 +28,15 @@ private:
     
     static constexpr int gl_pos_idx = 0;
     static constexpr int gl_color_idx = 1;
-    static constexpr unsigned int points_per_wave = 10;
-    static constexpr unsigned int max_waves = 10;
+    static constexpr unsigned int points_per_wave = 100;
+    static constexpr unsigned int max_waves = 100;
     static constexpr unsigned int max_vertices = points_per_wave*max_waves;
+    
     unsigned int VAO;
     unsigned int VBO;
     unsigned int EBO;
-    float vertices[max_vertices*3];
+    //position and colors
+    float vertices[max_vertices*6];
     unsigned int num_waves;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WaveTerrainWindow)

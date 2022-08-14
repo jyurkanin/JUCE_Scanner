@@ -80,6 +80,7 @@ MainComponent::MainComponent()
     retriggerButton.setButtonText("Retrigger");
     retriggerButton.onClick = [this] { retriggerButtonClicked(); };
     
+    
     addAndMakeVisible(dampingSlider);
     dampingSlider.setRange(0.0f, 1.0f, .001f);
     dampingSlider.setSkewFactorFromMidPoint(.1f);
@@ -216,6 +217,7 @@ void MainComponent::resized(){
   dampingSlider.setBounds(button_width,      slider_y_pos, slider_width, slider_height);
   connectionSlider.setBounds(button_width + slider_width, slider_y_pos, slider_width, slider_height);
   portamentoSlider.setBounds(button_width + slider_width*2, slider_y_pos, slider_width, slider_height);
+
   
   int keyboard_y_pos = slider_y_pos + slider_height + 50;
   int keyboard_height = 200;
@@ -233,6 +235,7 @@ void MainComponent::sliderValueChanged(juce::Slider* slider) {
     }
     else if(slider == &connectionSlider){
         scanner.connection_gain = connectionSlider.getValue();
+        terrain_window->near_plane_dist = connectionSlider.getValue();
     }
     else if(slider == &portamentoSlider){
         scanner.portamento_tc = portamentoSlider.getValue();
