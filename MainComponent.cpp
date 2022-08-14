@@ -235,7 +235,6 @@ void MainComponent::sliderValueChanged(juce::Slider* slider) {
     }
     else if(slider == &connectionSlider){
         scanner.connection_gain = connectionSlider.getValue();
-        terrain_window->near_plane_dist = connectionSlider.getValue();
     }
     else if(slider == &portamentoSlider){
         scanner.portamento_tc = portamentoSlider.getValue();

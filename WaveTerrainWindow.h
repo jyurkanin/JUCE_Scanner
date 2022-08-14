@@ -13,8 +13,7 @@ public:
     void shutdown() override;
     
     void paint(juce::Graphics& g) override;
-
-    float near_plane_dist = 7.0f;
+    
     
 private:
     juce::Matrix3D<float> getProjectionMatrix() const;
@@ -24,7 +23,12 @@ private:
     juce::String fragmentShader;
   
     std::unique_ptr<juce::OpenGLShaderProgram> shader;
-    
+
+    //visual params
+    static constexpr float width_scale = 1.0f;
+    static constexpr float near_plane_dist = 8.5f;
+    static constexpr float view_angle = .191;
+    static constexpr float camera_height = .712f;
     
     static constexpr int gl_pos_idx = 0;
   //static constexpr int gl_color_idx = 1;

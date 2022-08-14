@@ -11,16 +11,7 @@ WaveTerrainWindow::WaveTerrainWindow(){
     //Test.
     num_waves = max_waves;
     
-    for(int i = 0; i < num_waves; i++){
-        int offset = i*points_per_wave;
-        for(int j = 0; j < points_per_wave; j++){
-            float inc = (2*j) + 2*i;
-            int v_offset = 3*(offset+j);
-            vertices[v_offset+0] = -.5f + ((float)j/(points_per_wave-1));
-            vertices[v_offset+1] = .25f*sinf(M_PI*inc/(points_per_wave-1));
-            vertices[v_offset+2] = -i;
-        }
-    }
+
     
 }
 
@@ -89,11 +80,29 @@ void WaveTerrainWindow::render(){
         printf("juce context is not active\n");
         return;
     }
-  
-  
+    
+    
+    for(int i = 0; i < num_waves; i++){
+        int offset = i*points_per_wave;
+        for(int j = 0; j < points_per_wave; j++){
+            float inc = (2*j) + 2*i;
+            int v_offset = 3*(offset+j);
+            vertices[v_offset+0] = width_scale*2* (-.5f + ((float)j/(points_per_wave-1)));
+            vertices[v_offset+1] = .25f*sinf(M_PI*inc/(points_per_wave-1));
+            vertices[v_offset+2] = -10.0f*i/num_waves; //-1*logf((float)i);
+        }
+    }
+    
+    
     float desktopScale = openGLContext.getRenderingScale();
     juce::OpenGLHelpers::clear(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
-  
+
+    glEnable(GL_DEPTH_TEST);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDepthFunc(GL_LESS);
+    
+    
+    
     glViewport(0, 0,
                juce::roundToInt(desktopScale * (float) getWidth()),
                juce::roundToInt(desktopScale * (float) getHeight()));
@@ -147,6 +156,7 @@ void WaveTerrainWindow::render(){
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices*sizeof(float), indices, GL_STATIC_DRAW);
     
     
+
     glEnableVertexAttribArray(gl_pos_idx);
     glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, nullptr);
     glDisableVertexAttribArray(gl_pos_idx);
@@ -167,13 +177,13 @@ void WaveTerrainWindow::shutdown(){
 juce::Matrix3D<float> WaveTerrainWindow::getProjectionMatrix() const {
     float w = .5f;// / (0.5f + 0.1f);
     float h = w * getLocalBounds().toFloat().getAspectRatio(false);
-    return juce::Matrix3D<float>::fromFrustum(-w, w, -h, h, near_plane_dist, 800.0f);
+    return juce::Matrix3D<float>::fromFrustum(-w, w, -h, h, near_plane_dist, 1000.0f);
 }
 
 juce::Matrix3D<float> WaveTerrainWindow::getViewMatrix() const {
-    juce::Matrix3D<float> viewMatrix ({0.0f, -.2f, -near_plane_dist});
+    juce::Matrix3D<float> viewMatrix ({0.0f, -camera_height, -near_plane_dist-12.0f});
     juce::Matrix3D<float> rotationMatrix = viewMatrix.rotation({
-            .05,
+            view_angle,
             0, //.01*getFrameCounter(),
             0.0f});
     return rotationMatrix * viewMatrix;
