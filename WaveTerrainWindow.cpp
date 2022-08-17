@@ -5,14 +5,30 @@
 using namespace juce::gl;
 
 
-WaveTerrainWindow::WaveTerrainWindow(){
+WaveTerrainWindow::WaveTerrainWindow(Scanner *s) : scanner(s){
     setSize(500,400);
     
     //Test.
     num_waves = max_waves;
-    
 
-    
+    //zero the buffer. Kind of a stupid way to do it.
+    for(int i = 0; i < points_per_wave; i++){
+        wave_buffer[0][i] = 0;
+        wave_buffer[1][i] = 0;
+    }
+
+    atomic_idx = 0;
+
+    for(int i = 0; i < num_waves; i++){
+        int offset = i*points_per_wave;
+        for(int j = 0; j < points_per_wave; j++){
+            float inc = (2*j) + 2*i;
+            int v_offset = 3*(offset+j);
+            vertices[v_offset+0] = width_scale*2* (-.5f + ((float)j/(points_per_wave-1)));
+            vertices[v_offset+1] = .5f*sinf(M_PI*2*j/(points_per_wave-1));
+            vertices[v_offset+2] = -10.0f*i/num_waves; //-1*logf((float)i);
+        }
+    }
 }
 
 WaveTerrainWindow::~WaveTerrainWindow(){
@@ -67,9 +83,41 @@ void WaveTerrainWindow::initialise(){
 
 
 void WaveTerrainWindow::paint (juce::Graphics& g) {
-    
+
 }
 
+void WaveTerrainWindow::updateVertices(){
+    for(int i = num_waves-1; i > 0; i--){
+        int offset = i*points_per_wave;
+        
+        for(int j = 0; j < points_per_wave; j++){
+            int v_offset = 3*(offset+j);
+            int prev_offset = v_offset - (3*points_per_wave);
+            vertices[v_offset+1] = vertices[prev_offset+1];
+        }
+    }
+    
+
+    int cnt = 0;
+    int temp_idx = scanner->buf_idx+1;
+    for(int j = 0; j < points_per_wave; j++){
+        int v_offset = 3*j;
+        vertices[v_offset+1] = .5f*scanner->node_pos[temp_idx][cnt+=6];
+    }
+
+}
+
+// void WaveTerrainWindow::updateWave(float *new_wave){
+//     int cnt = 0;
+
+//     int other_idx = atomic_idx ^ 1; //get the write index
+//     for(int i = 0; i < points_per_wave; i++){
+//         wave_buffer[other_idx][i] = new_wave[cnt];
+//         cnt += ratio;
+//     }
+    
+//     atomic_has_update = 1;
+// }
 
 void WaveTerrainWindow::render(){
     //printf("render current time %lld\n", juce::Time::getCurrentTime().toMilliseconds());
@@ -81,26 +129,20 @@ void WaveTerrainWindow::render(){
         return;
     }
     
-    
-    for(int i = 0; i < num_waves; i++){
-        int offset = i*points_per_wave;
-        for(int j = 0; j < points_per_wave; j++){
-            float inc = (2*j) + 2*i;
-            int v_offset = 3*(offset+j);
-            vertices[v_offset+0] = width_scale*2* (-.5f + ((float)j/(points_per_wave-1)));
-            vertices[v_offset+1] = .25f*sinf(M_PI*inc/(points_per_wave-1));
-            vertices[v_offset+2] = -10.0f*i/num_waves; //-1*logf((float)i);
-        }
+    // if(atomic_has_update){
+    //     atomic_idx ^= 1;
+    //     atomic_has_update = 0;
+
+    if(getFrameCounter() % 4){
+        updateVertices();
     }
-    
     
     float desktopScale = openGLContext.getRenderingScale();
     juce::OpenGLHelpers::clear(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
-
+    
     glEnable(GL_DEPTH_TEST);
     glClear(GL_DEPTH_BUFFER_BIT);
     glDepthFunc(GL_LESS);
-    
     
     
     glViewport(0, 0,
@@ -156,7 +198,6 @@ void WaveTerrainWindow::render(){
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices*sizeof(float), indices, GL_STATIC_DRAW);
     
     
-
     glEnableVertexAttribArray(gl_pos_idx);
     glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, nullptr);
     glDisableVertexAttribArray(gl_pos_idx);
@@ -181,7 +222,7 @@ juce::Matrix3D<float> WaveTerrainWindow::getProjectionMatrix() const {
 }
 
 juce::Matrix3D<float> WaveTerrainWindow::getViewMatrix() const {
-    juce::Matrix3D<float> viewMatrix ({0.0f, -camera_height, -near_plane_dist-12.0f});
+    juce::Matrix3D<float> viewMatrix ({0.0f, -camera_height, -near_plane_dist-10.0f});
     juce::Matrix3D<float> rotationMatrix = viewMatrix.rotation({
             view_angle,
             0, //.01*getFrameCounter(),

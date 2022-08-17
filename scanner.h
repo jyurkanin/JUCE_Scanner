@@ -16,7 +16,7 @@
 
 class Scanner : public juce::Timer{
 public:
-    const static int num_nodes = 600; //random.
+    static constexpr int num_nodes = 600; //random.
 
     std::atomic<unsigned> should_swap;
     std::atomic<unsigned> buf_idx; //can be 0 or 2.

@@ -11,5 +11,5 @@ out vec3 vertexColor; // output a color to the fragment shader
 void main() {
     gl_Position = projectionMatrix * viewMatrix * vec4(aPos, 1.0);
     //gl_Position = vec4(aPos, 1.0);
-    vertexColor = vec3(1.0f*(aPos.y + .25), 0, 0);
+    vertexColor = vec3(1.0f*(aPos.y) - .2, 0, 0);
 }

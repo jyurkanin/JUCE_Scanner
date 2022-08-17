@@ -117,7 +117,7 @@ MainComponent::MainComponent()
     portamentoLabel.setText("Glide", juce::dontSendNotification);
     portamentoLabel.attachToComponent(&portamentoSlider, false);
     
-    terrain_window.reset(new WaveTerrainWindow());
+    terrain_window.reset(new WaveTerrainWindow(&scanner));
     addAndMakeVisible(terrain_window.get());
     
     //Make sure you set the size of the component after
