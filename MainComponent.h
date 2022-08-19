@@ -15,7 +15,7 @@
 */
 //==============================================================================
 
-class MainComponent : public juce::AudioAppComponent, juce::Slider::Listener, juce::Timer {
+class MainComponent : public juce::AudioAppComponent, juce::Slider::Listener, juce::Timer{
 public:
   
   MainComponent();
