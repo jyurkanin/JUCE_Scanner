@@ -1,6 +1,10 @@
 #include "WaveTerrainWindow.h"
+#include "CompiledShaders.h"
+
 #include <stdio.h>
 #include <math.h>
+
+
 
 using namespace juce::gl;
 
@@ -46,18 +50,22 @@ void WaveTerrainWindow::initialise(){
     //printf("wave_shader.vert: %s\n", juce::File(cwd_string + juce::String("wave_shader.vert")).loadFileAsString().toRawUTF8());
     
     shader.reset(new juce::OpenGLShaderProgram(openGLContext));
-    result = shader->addVertexShader(juce::File(cwd_string + juce::String("wave_shader.vert")).loadFileAsString());
+    //result = shader->addVertexShader(juce::File(cwd_string + juce::String("wave_shader.vert")).loadFileAsString());
+    juce::String vertexString(CompiledShaders::Vertex);
+    result = shader->addVertexShader(vertexString);
     is_good &= result;
     if(!result){
         juce::String err = shader->getLastError();
         printf("Vertex Shader Error %s\n", err.toRawUTF8());
     }
     
-    result = shader->addFragmentShader(juce::File(cwd_string + juce::String("wave_shader.frag")).loadFileAsString());
+    //result = shader->addFragmentShader(juce::File(cwd_string + juce::String("wave_shader.frag")).loadFileAsString());
+    juce::String fragmentString(CompiledShaders::Fragment);
+    result = shader->addFragmentShader(fragmentString);
     is_good &= result;
     if(!result){
         juce::String err = shader->getLastError();
-        printf("Vertex Shader Error %s\n", err.toRawUTF8());
+        printf("Fragment Shader Error %s\n", err.toRawUTF8());
     }
     
     result = shader->link();
@@ -76,7 +84,10 @@ void WaveTerrainWindow::initialise(){
     
     juce::String statusText = "GLSL: v" + juce::String (juce::OpenGLShaderProgram::getLanguageVersion(), 2);
     std::cout << statusText.toRawUTF8() << std::endl;
-    
+
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 }
 
 //jassert (getBounds().isEmpty() || ! isOpaque());
@@ -102,7 +113,8 @@ void WaveTerrainWindow::updateVertices(){
     int temp_idx = scanner->buf_idx+1;
     for(int j = 0; j < points_per_wave; j++){
         int v_offset = 3*j;
-        vertices[v_offset+1] = .5f*scanner->node_pos[temp_idx][cnt+=6];
+        vertices[v_offset+1] = .5f*scanner->node_pos[temp_idx][cnt];
+        cnt += 6;
     }
 
 }
@@ -134,11 +146,11 @@ void WaveTerrainWindow::render(){
     //     atomic_has_update = 0;
 
     if(getFrameCounter() % 4){
-        updateVertices();
+      updateVertices();
     }
     
     float desktopScale = openGLContext.getRenderingScale();
-    juce::OpenGLHelpers::clear(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
+    juce::OpenGLHelpers::clear(juce::Colours::black);
     
     glEnable(GL_DEPTH_TEST);
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -182,18 +194,16 @@ void WaveTerrainWindow::render(){
     }
     
     
-    glGenVertexArrays(1, &VAO); //Generates 1 vertex array object name
+
     glBindVertexArray(VAO);     //Binding a VAO makes it available for use
     
     //Create Buffer and create pointers to the attributes.
     ////This creates one buffer that looks like {pos,color,pos,color,...}
-    glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, num_coords*sizeof(float), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(gl_pos_idx, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
     
     
-    glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices*sizeof(float), indices, GL_STATIC_DRAW);
     
