@@ -232,7 +232,7 @@ juce::Matrix3D<float> WaveTerrainWindow::getProjectionMatrix() const {
 }
 
 juce::Matrix3D<float> WaveTerrainWindow::getViewMatrix() const {
-    juce::Matrix3D<float> viewMatrix ({0.0f, -camera_height, -near_plane_dist-10.0f});
+    juce::Matrix3D<float> viewMatrix = juce::Matrix3D<float>::fromTranslation({0.0f, -camera_height, -near_plane_dist-10.0f});
     juce::Matrix3D<float> rotationMatrix = viewMatrix.rotation({
             view_angle,
             0, //.01*getFrameCounter(),

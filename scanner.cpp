@@ -53,9 +53,6 @@ Scanner::Scanner(){
   
   fillWithWaveform("", hammer_table, num_nodes);
   
-  lp_filter.setCutoff(4000.0f);
-  lp_filter.setQFactor(.1f);
-  
   should_swap = 0;
   buf_idx = 0;
 }

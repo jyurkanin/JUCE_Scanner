@@ -9,7 +9,6 @@
 
 #include <JuceHeader.h>
 
-#include "filter.h"
 #include "wavfile.h"
 
 #pragma once
@@ -57,7 +56,6 @@ public:
     int bresize_mutex;
     
     juce::CriticalSection mutex_scan_table_;
-    LPFilter lp_filter;
 
     float portamento_tc;
     int retrigger;
