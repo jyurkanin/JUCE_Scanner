@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdio>
 #include <fstream>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <atomic>
 
 #include <JuceHeader.h>

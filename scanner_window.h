@@ -1,5 +1,5 @@
 #include <JuceHeader.h>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include "scanner.h"
 
 #pragma once

@@ -1,19 +1,21 @@
 cmake_minimum_required(VERSION 3.15)
 project(SUPER_SCANNER_PLUGIN VERSION 0.0.1)
 
-find_package(Eigen3 REQUIRED NO_MODULE)
-
-# If you've installed JUCE somehow (via a package manager, or directly using the CMake install
-# target), you'll need to tell this project that it depends on the installed copy of JUCE. If you've
-# included JUCE directly in your source tree (perhaps as a submodule), you'll need to tell CMake to
-# include that subdirectory as part of the build.
-
-# find_package(JUCE CONFIG REQUIRED)        # If you've installed JUCE to your system
-# or
-# add_subdirectory(JUCE)                    # If you've put JUCE in a subdirectory called JUCE
 
 set(CMAKE_CXX_FLAGS_RELEASE_INIT "-Wall -O3 -DNDEBUG -m64")
-set (CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14)
+
+FetchContent_Declare(
+  Eigen
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG master
+  GIT_SHALLOW TRUE
+  GIT_PROGRESS TRUE)
+set(EIGEN_BUILD_DOC OFF)
+set(BUILD_TESTING OFF)
+set(EIGEN_BUILD_PKGCONFIG OFF)
+set( OFF)
+FetchContent_MakeAvailable(Eigen)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -75,4 +77,5 @@ target_link_libraries(SuperScanner PRIVATE
 		      juce::juce_opengl
 		      juce::juce_osc
 		      juce::juce_video
+		      Eigen3::Eigen
 		     )
