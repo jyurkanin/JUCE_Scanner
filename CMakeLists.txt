@@ -5,6 +5,7 @@ project(SUPER_SCANNER_PLUGIN VERSION 0.0.1)
 set(CMAKE_CXX_FLAGS_RELEASE_INIT "-Wall -O3 -DNDEBUG -m64")
 set(CMAKE_CXX_STANDARD 14)
 
+include(FetchContent)
 FetchContent_Declare(
   Eigen
   GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
@@ -17,7 +18,6 @@ set(EIGEN_BUILD_PKGCONFIG OFF)
 set( OFF)
 FetchContent_MakeAvailable(Eigen)
 
-include(FetchContent)
 FetchContent_Declare(
         JUCE
         GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
