@@ -41,7 +41,7 @@ jobs:
         submodules: true
 
     - name: Set up Clang
-      if: ${{ matrix.name != 'macOS' }}
+      if: ${{ runner.os != 'macOS' }}
       uses: egor-tensin/setup-clang@v1
 
     - if: ${{ runner.os == 'Linux' }}
