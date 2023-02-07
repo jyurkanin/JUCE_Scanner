@@ -348,7 +348,7 @@ void Scanner::fillWithWaveform(juce::String fn, float* table, int table_len){
   long int num_samples = reader->lengthInSamples;
   juce::AudioBuffer<float> buffer(reader->numChannels, num_samples);
   reader->read(&buffer, 0, num_samples, 0, true, true);
-  float *file_data = buffer.getReadPointer(0);
+  const float *file_data = buffer.getReadPointer(0);
   
   //now you need to linearly interpolate to make the audio file fit into the hammer table.
   if(scan_len == num_samples){
