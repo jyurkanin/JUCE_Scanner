@@ -346,7 +346,7 @@ void Scanner::fillWithWaveform(juce::String fn, float* table, int table_len){
   juce::AudioFormatManager format_manager;
   juce::AudioFormatReader* reader = format_manager.createReaderFor(file);
   long int num_samples = reader->lengthInSamples;
-  juce::AudioBuffer buffer(reader->numChannels, num_samples);
+  juce::AudioBuffer<float> buffer(reader->numChannels, num_samples);
   reader->read(&buffer, 0, num_samples, 0, true, true);
   float *file_data = buffer.getReadPointer(0);
   
