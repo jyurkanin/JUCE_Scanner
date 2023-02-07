@@ -48,7 +48,6 @@ target_sources(SuperScanner PRIVATE
 	       ScannerVoice.cpp
 	       scanner_window.cpp
 	       WaveTerrainWindow.cpp
-	       wavfile.cpp
 )
 
 

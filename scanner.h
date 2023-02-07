@@ -9,8 +9,6 @@
 
 #include <JuceHeader.h>
 
-#include "wavfile.h"
-
 #pragma once
 
 class Scanner : public juce::Timer{

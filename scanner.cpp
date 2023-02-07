@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <memory>
+
 
 #define CONST_DX 8.0f
 
@@ -332,40 +334,45 @@ void Scanner::getSampleBlock(float **block, int len){
 
 void Scanner::fillWithWaveform(juce::String fn, float* table, int table_len){
   int scan_len = table_len;
-    
-  if(fn.length() == 0){
+  juce::File file(fn);
+  
+  if(fn.length() == 0 || !file.existsAsFile()){
     for(int i = 0; i < table_len; i++){
       table[i] = 0;
     }
     return;
   }
   
+  juce::AudioFormatManager format_manager;
+  juce::AudioFormatReader* reader = format_manager.createReaderFor(file);
+  long int num_samples = reader->lengthInSamples;
+  juce::AudioBuffer buffer(reader->numChannels, num_samples);
+  reader->read(&buffer, 0, num_samples, 0, true, true);
+  float *file_data = buffer.getReadPointer(0);
   
-  WavFile wavfile(fn.toRawUTF8());
-  //now you need to linearly interpolate to make the wavfile fit into the hammer table.
-  
-  if(scan_len == wavfile.data_len){
+  //now you need to linearly interpolate to make the audio file fit into the hammer table.
+  if(scan_len == num_samples){
     for(int i = 0; i < scan_len; i++){
-      table[i] = wavfile.data[i];
+      table[i] = file_data[i];
     }
   }
-  else if(scan_len <= wavfile.data_len){
+  else if(scan_len <= num_samples){
     for(int i = 0; i < scan_len; i++){
-      table[i] = wavfile.data[(int)(i*wavfile.data_len/(float)scan_len)];
+      table[i] = file_data[(int)(i*num_samples/(float)scan_len)];
     }
   }
-  else if(scan_len > wavfile.data_len){ //need to linearly interpolate.
+  else if(scan_len > num_samples){ //need to linearly interpolate.
     float index;
     int l_index; //lower
     int u_index; //upper
     for(int i = 0; i < scan_len; i++){
-      index = (i*wavfile.data_len/(float)scan_len);
+      index = (i*num_samples/(float)scan_len);
       l_index = (int) index;
       u_index = l_index+1;
-      if(u_index < wavfile.data_len)
-        table[i] = ((index-l_index)*wavfile.data[u_index] + (u_index-index)*wavfile.data[l_index]); //linear interpolation
+      if(u_index < num_samples)
+        table[i] = ((index-l_index)*file_data[u_index] + (u_index-index)*file_data[l_index]); //linear interpolation
       else //edge case
-        table[i] = ((index-l_index)*wavfile.data[wavfile.data_len] + (u_index-index)*wavfile.data[l_index]); 
+        table[i] = ((index-l_index)*file_data[num_samples] + (u_index-index)*file_data[l_index]); 
     }            
   }
   
