@@ -21,7 +21,7 @@ jobs:
       matrix:
         config:
         - {
-            name: "Windows Latest MinGW", artifact: "Windows-MinGW.tar.xz",
+            name: "Windows Latest MinGW",
             os: windows-latest,
 	    environment_script: "C:/Program Files/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           }
@@ -247,7 +247,7 @@ jobs:
       matrix:
         config:
         - {
-            name: "Windows Latest MinGW", artifact: "Windows-MinGW.tar.xz",
+            name: "Windows Latest MinGW", artifact: "Windows",
             os: ubuntu-latest
           }
         - {
