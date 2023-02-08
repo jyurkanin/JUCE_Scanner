@@ -104,7 +104,7 @@ void ScannerVoice::renderNextBlock (juce::AudioBuffer<float>& outputBuffer, int 
         delta_scan_idx_current = ((1-mix)*delta_scan_idx_current) + (mix*delta_scan_idx_target);
         
         float gain = adsr.getNextSample();
-        sample = sinf(M_PI*2*scan_idx);
+        sample = sinf(juce::MathConstants<float>::pi*2*scan_idx);
         sample *= gain;
         
         for(auto channel = 0; channel < outputBuffer.getNumChannels(); channel++){

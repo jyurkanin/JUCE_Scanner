@@ -124,7 +124,7 @@ void ScannerVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int s
     has_block_ready = 0;
     
     for(int ii = 0; ii < numSamples; ii++){
-        float sample = audio_queue[ii]; //sinf(2.0f*M_PI*440.0f*idx/44100.0f); //
+        float sample = audio_queue[ii]; //sinf(2.0f*juce::MathConstants<float>::pi*440.0f*idx/44100.0f); //
         //idx++;
         
         for(auto channel = 0; channel < outputBuffer.getNumChannels(); channel++){

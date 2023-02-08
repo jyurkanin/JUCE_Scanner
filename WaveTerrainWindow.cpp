@@ -29,7 +29,7 @@ WaveTerrainWindow::WaveTerrainWindow(Scanner *s) : scanner(s){
             float inc = (2*j) + 2*i;
             int v_offset = 3*(offset+j);
             vertices[v_offset+0] = width_scale*2* (-.5f + ((float)j/(points_per_wave-1)));
-            vertices[v_offset+1] = .5f*sinf(M_PI*2*j/(points_per_wave-1));
+            vertices[v_offset+1] = .5f*sinf(juce::MathConstants<float>::pi*2*j/(points_per_wave-1));
             vertices[v_offset+2] = -10.0f*i/num_waves; //-1*logf((float)i);
         }
     }
