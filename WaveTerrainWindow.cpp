@@ -3,10 +3,46 @@
 
 #include <stdio.h>
 #include <math.h>
-
-
+#include <stdlib.h>
 
 using namespace juce::gl;
+
+void stupid_break() {}
+
+void printGLErrors()
+{
+  GLenum error;
+  
+  do{
+    error = glGetError();
+    switch(error)
+      {
+      case GL_INVALID_ENUM:
+	printf("gl invalid enum\n");
+	break;
+      case GL_INVALID_VALUE:
+	printf("gl invalid value\n");
+	break;
+      case GL_INVALID_OPERATION:
+	printf("gl invalid operation\n");
+	break;
+      case GL_INVALID_FRAMEBUFFER_OPERATION:
+	printf("gl invalid framebuffer operation\n");
+	break;
+      case GL_OUT_OF_MEMORY:
+	printf("gl out of memory\n");
+	break;
+      case GL_STACK_UNDERFLOW:
+	printf("gl underflow\n");
+	break;
+      case GL_STACK_OVERFLOW:
+	printf("gl overflow\n");
+	break;
+      }
+  } while(error != GL_NO_ERROR);
+  
+}
+
 
 
 WaveTerrainWindow::WaveTerrainWindow(Scanner *s) : scanner(s){
@@ -49,6 +85,8 @@ void WaveTerrainWindow::initialise(){
     //juce::String temp_string = cwd_string + juce::String("wave_shader.frag");
     //printf("wave_shader.vert: %s\n", juce::File(cwd_string + juce::String("wave_shader.vert")).loadFileAsString().toRawUTF8());
     
+    openGLContext.setOpenGLVersionRequired(juce::OpenGLContext::openGL3_2);
+    
     shader.reset(new juce::OpenGLShaderProgram(openGLContext));
     //result = shader->addVertexShader(juce::File(cwd_string + juce::String("wave_shader.vert")).loadFileAsString());
     juce::String vertexString(CompiledShaders::Vertex);
@@ -88,6 +126,9 @@ void WaveTerrainWindow::initialise(){
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
+
+    printf("THis thing ya know\n");
+    printGLErrors();
 }
 
 //jassert (getBounds().isEmpty() || ! isOpaque());
@@ -193,13 +234,14 @@ void WaveTerrainWindow::render(){
         }
     }
     
-    
+    stupid_break();
 
     glBindVertexArray(VAO);     //Binding a VAO makes it available for use
     
     //Create Buffer and create pointers to the attributes.
     ////This creates one buffer that looks like {pos,color,pos,color,...}
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
     glBufferData(GL_ARRAY_BUFFER, num_coords*sizeof(float), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(gl_pos_idx, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
     
@@ -214,6 +256,8 @@ void WaveTerrainWindow::render(){
     
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    
+    printGLErrors();
 }
 
 void WaveTerrainWindow::shutdown(){
