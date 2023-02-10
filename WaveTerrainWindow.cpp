@@ -272,15 +272,15 @@ void WaveTerrainWindow::shutdown(){
 juce::Matrix3D<float> WaveTerrainWindow::getProjectionMatrix() const {
     float w = .5f;// / (0.5f + 0.1f);
     float h = w * getLocalBounds().toFloat().getAspectRatio(false);
-    return juce::Matrix3D<float>::fromFrustum(-w, w, -h, h, near_plane_dist, 1000.0f);
+    return juce::Matrix3D<float>::fromFrustum(-w, w, -h, h, near_plane_dist, 400.0f);
 }
 
 juce::Matrix3D<float> WaveTerrainWindow::getViewMatrix() const {
-    juce::Matrix3D<float> viewMatrix = juce::Matrix3D<float>::fromTranslation({0.0f, -camera_height, -near_plane_dist-10.0f});
+    juce::Matrix3D<float> viewMatrix = juce::Matrix3D<float>::fromTranslation({0.0f, -3.5, -18});
     juce::Matrix3D<float> rotationMatrix = viewMatrix.rotation({
-            view_angle,
-            0, //.01*getFrameCounter(),
-            0.0f});
+	0.15,
+	0, //.01*getFrameCounter(),
+	0.0f});
     return rotationMatrix * viewMatrix;
 }
 

@@ -14,6 +14,7 @@ out vec3 vertexColor; // output a color to the fragment shader
 void main() {
     gl_Position = projectionMatrix * viewMatrix * vec4(aPos, 1.0);
     vertexColor = vec3(1.0f*(aPos.y) - .2, 0, 0);
+    //vertexColor = vec3(.8, 0, 0);
 })DERP";
   static constexpr char* Fragment = R"HERP(#version 330 core
 in vec3 vertexColor;

@@ -39,7 +39,8 @@ private:
     static constexpr float width_scale = 1.0f;
     static constexpr float near_plane_dist = 8.5f; //8.5
     static constexpr float view_angle = .161; //.191
-    static constexpr float camera_height = .612f; //.712
+    static constexpr float camera_height = 0; //.712
+    static constexpr float view_dist_z = 10;
     
     static constexpr int gl_pos_idx = 0;
   //static constexpr int gl_color_idx = 1;
